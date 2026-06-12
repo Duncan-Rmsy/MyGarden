@@ -46,12 +46,27 @@ Three connected experiences:
 
 - Photo check-ins: snap a seedling, Claude vision API estimates stage/health and re-anchors the
   twin; flags problems (pests, nutrient deficiency, disease) with suggested actions.
+- **Photo intake**: snap a seed packet or the tag on a bought seedling — Claude vision extracts
+  variety, days to maturity, spacing, and sowing instructions, then creates/matches a catalog
+  entry and pre-fills the planting. (Same vision capability as photo check-ins, different entry
+  point — intake vs. progress tracking.)
+- **Background twin + reliable reminders**: a tiny companion notification service (a daily cron
+  job) recomputes the twin server-side and delivers reminders via web push *or email*, so nothing
+  is missed even when the app hasn't been opened. Email doubles as the fallback channel where
+  push is flaky (iOS).
 - Natural-language check-ins and Q&A ("the leaves are yellowing at the edges — what's wrong?").
 - Weather-adjusted watering (evapotranspiration model rather than fixed cadence).
 - Succession planting suggestions and bed-rotation warnings (don't follow tomatoes with potatoes).
 
 ### V3 — Ideas parking lot
 
+- **Variety advisor**: recommends specific varieties for your climate, space, and goals, and
+  searches which nearby garden centres or seed retailers stock them (web search / retailer
+  integrations).
+- **Rotation-aware season kick-off**: at the start of a season, proposes which crop families go
+  in which beds based on previous seasons' plantings (the `Crop.family` field and per-bed
+  planting history in the data model already support this). Builds on V2's rotation warnings:
+  V2 warns, V3 proposes.
 - Harvest logging and yield history; year-over-year variety comparison.
 - Seed inventory with "sow by" expiry tracking.
 - Sharing/printing the garden plan; multi-garden support.
@@ -61,7 +76,9 @@ Three connected experiences:
 
 **Local-first PWA.** All data lives on-device (IndexedDB); the only network calls in v1 are to the
 weather API. No accounts, no backend to run — which suits a single-user garden app and keeps it
-free to operate. A sync backend can be added later without changing the data model.
+free to operate. The one planned exception is v2's notification service: a deliberately small
+cron job that recomputes the twin daily and sends push/email reminders. It only needs the task
+feed, not the full dataset, so the local-first data model is unchanged.
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -179,10 +196,11 @@ the app fulfils the core promise.
   add GDD data for the ~10 crops you actually grow first. *(Question: what do you typically grow?
   That list should drive catalog priorities.)*
 - **iOS web push** requires the PWA to be installed to the home screen (iOS 16.4+) and is less
-  reliable than native. The in-app Today feed is the dependable channel; push is best-effort.
-- **Background recompute** on a pure PWA is limited — the twin mainly updates on app open. Daily
-  use is expected for a gardener, so acceptable for v1; a tiny cron + push server is the v2 escape
-  hatch if needed.
+  reliable than native. In v1 the in-app Today feed is the dependable channel; v2's notification
+  service resolves this properly, with email as the channel that always works.
+- **Background recompute** on a pure PWA is limited — in v1 the twin mainly updates on app open.
+  Daily use is expected for a gardener, so acceptable; v2's notification service moves the daily
+  recompute server-side so reminders arrive even when the app stays closed.
 - **Indoor seedlings** don't experience outdoor weather. V1 models the indoor phase on calendar
   days at an assumed room temperature; GDD starts at transplant.
 - **Where is the garden?** Frost dates and the weather feed need a location — onboarding asks, but
