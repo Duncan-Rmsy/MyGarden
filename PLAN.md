@@ -503,6 +503,12 @@ prompts from day one.
 **V1.5 (fast follows, §2):** full-catalog GDD upgrade · weed flush-clock twin (§5a) · season
 scrubber (§4a) · propagation-zone capacity warnings (§4e). Pest module (§5b) remains V2.
 
+**M0.5 — scaffold reconciliation (do first, before M1):** the shipped M0 scaffold predates this
+plan revision, so align it with the updated data model (§4) and twin (§5) before building on it —
+add `maxTempC` (and apply the GDD upper cap in `src/domain/gdd.ts`), `frostKillTempC`,
+`photoperiodSensitive`, and the `'normal'` `WeatherDay.source` to `src/data/types.ts`. Small,
+mechanical, and keeps code and plan from drifting.
+
 Each milestone ends usable: after M3 you have a real planning tool even with no twin; after M5
 the app fulfils the core promise.
 
