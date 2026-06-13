@@ -10,6 +10,14 @@ describe('dailyGdd', () => {
   it('clamps to zero on cold days below the base temperature', () => {
     expect(dailyGdd(-2, 4, 10)).toBe(0); // mean 1, base 10 -> clamped
   });
+
+  it('caps the mean at maxTempC so a heatwave does not over-accumulate', () => {
+    expect(dailyGdd(30, 40, 10, 30)).toBe(20); // mean 35 capped to 30, base 10
+  });
+
+  it('leaves days below the cap untouched', () => {
+    expect(dailyGdd(10, 20, 6, 30)).toBe(9); // mean 15 < cap 30, base 6
+  });
 });
 
 describe('accumulateGdd', () => {
@@ -20,6 +28,14 @@ describe('accumulateGdd', () => {
       { tMinC: 0, tMaxC: 6 }, // 0
     ];
     expect(accumulateGdd(days, 6)).toBe(18);
+  });
+
+  it('applies the daily cap to every contribution when maxTempC is given', () => {
+    const days = [
+      { tMinC: 30, tMaxC: 40 }, // mean 35 -> capped 30 -> 24
+      { tMinC: 10, tMaxC: 20 }, // mean 15 < cap -> 9
+    ];
+    expect(accumulateGdd(days, 6, 30)).toBe(33);
   });
 
   it('is zero for no days', () => {
@@ -49,6 +65,14 @@ describe('GDD invariants (property-based, PLAN.md §5.1)', () => {
       fc.property(temp, temp, base, (a, b, baseTempC) => {
         const expected = Math.max(0, (a + b) / 2 - baseTempC);
         expect(dailyGdd(a, b, baseTempC)).toBe(expected);
+      }),
+    );
+  });
+
+  it('never exceeds the uncapped value — the cap only ever removes heat (§5.1)', () => {
+    fc.assert(
+      fc.property(temp, temp, base, base, (a, b, baseTempC, cap) => {
+        expect(dailyGdd(a, b, baseTempC, cap)).toBeLessThanOrEqual(dailyGdd(a, b, baseTempC));
       }),
     );
   });

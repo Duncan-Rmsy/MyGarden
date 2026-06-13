@@ -69,7 +69,10 @@ export interface Crop {
   daysToMaturity: Range;
   gddToMaturity?: number;
   baseTempC: number;
+  maxTempC?: number; // caps daily GDD so a heatwave can't over-accumulate (§5)
   frostTolerance: FrostTolerance;
+  frostKillTempC?: number; // damage threshold; falls back from frostTolerance (§4)
+  photoperiodSensitive?: boolean; // bolts/bulbs by daylength — GDD-only mispredicts (§5)
   startMethods: StartMethod[];
   indoorWeeks?: Range;
   sowWindows: RelativeWindow[];
@@ -103,5 +106,6 @@ export interface WeatherDay {
   tMinC: number;
   tMaxC: number;
   rainMm: number;
-  source: 'history' | 'forecast';
+  // 'normal' = day-of-year climatology for forward projection past the forecast (§4c).
+  source: 'history' | 'forecast' | 'normal';
 }
