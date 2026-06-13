@@ -50,7 +50,7 @@ browser-dependent tiers stay thin and cover only what the lower tiers _can't_.
 
 ### End-to-end / browser tests — scope and trigger
 
-jsdom cannot exercise three things the app actually promises, so these are the _only_ things E2E
+jsdom cannot reach several things the app actually promises, so these are the _only_ things E2E
 exists to cover — it must never re-test domain logic the unit tier already owns:
 
 - **Offline / PWA shell** — service worker registration, offline load, install/update flow (PLAN.md
@@ -63,7 +63,7 @@ exists to cover — it must never re-test domain logic the unit tier already own
 
 **Decision: not yet.** At milestone 0 the screens are placeholders, so Playwright would test stubs
 while adding browser binaries, CI time, and flake. **Introduce it when the first real journey lands**
-(onboarding in M1, or the planner grid in M3), kept to the four scopes above. For component tests
+(onboarding in M1, or the planner grid in M3), kept to the scopes above. For component tests
 that genuinely need a real browser (touch, layout) but not a full journey, prefer **Vitest browser
 mode** (Playwright provider) over a separate E2E harness — it reuses this same Vitest setup.
 
@@ -75,7 +75,12 @@ practices close that gap:
 - **Property-based tests** (fast-check, in the domain `*.test.ts`) assert the invariant from the
   plan over generated inputs — e.g. GDD is `max(0, mean − base)` for _all_ temperatures, packing is
   `floor(cell/spacing)²` for _all_ sizings — and shrink any failure to a minimal counterexample.
-  This is where edge-case bugs surface.
+  This is where edge-case bugs surface. A property must be **numerically sound** or it becomes
+  flaky: assert exact equality only where the maths is exact (integer / half-degree domains), and
+  use `≥`/`≤` or a tolerance for floating-point results — never bit-equality across a different
+  summation order. (The GDD accumulation property was caught over-claiming exactly this — by the
+  mutation run's dry-run under a fresh seed — and corrected; floating-point addition is not
+  associative.)
 - **Mutation testing** (Stryker) is the check on the tests themselves: it injects faults into
   `src/domain/` and re-runs the suite; a **surviving mutant** is a spot where a real bug would pass
   unnoticed. It is **opt-in**, run before merging significant domain changes:
@@ -117,15 +122,15 @@ API)**, on-device storage, and a service worker. The controls match that surface
 PLAN.md specifies concrete, testable formulas and rules. Each is encoded as a named test, so a change
 that silently diverges from the plan fails CI. Keep this table current as modules land:
 
-| PLAN.md                | Invariant under test                                                                                                | Where                        |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| §5.1 — GDD             | `dailyGdd = max(0, (tMin+tMax)/2 − baseTempC)`; accumulation sums & is order-independent                            | `src/domain/gdd.test.ts`     |
-| §4a — planner geometry | `plantsPerCell = floor(cell/spacing)²` (else 0); `blockCapacity = perCell × cells`; `rowCount = floor(len/spacing)` | `src/domain/planner.test.ts` |
-| §4c — frost dates      | avg last-spring / first-autumn 0 °C crossings from history                                                          | _M1 — `climate.test.ts`_     |
-| §4e — start method     | direct / indoor / buy selection by date vs frost window; indoor→transplant phase switch                             | _M4_                         |
-| §5.2–5.3 — twin        | accumulated GDD → stage + projections; observation re-anchors baseline; drift bias                                  | _M4 — `twin.test.ts`_        |
-| §5.5 — task engine     | idempotent generation/expiry via `generatedBy` keys                                                                 | _M5 — `tasks.test.ts`_       |
-| §5a — weeds            | flush trigger on rain threshold; hoeable window opens then closes; reset on action                                  | _M4_                         |
+| PLAN.md                | Invariant under test                                                                                                                       | Where                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| §5.1 — GDD             | `dailyGdd = max(0, (tMin+tMax)/2 − baseTempC)`; accumulation is non-negative & monotone in days; order-independent for whole-degree inputs | `src/domain/gdd.test.ts`     |
+| §4a — planner geometry | `plantsPerCell = floor(cell/spacing)²` (else 0); `blockCapacity = perCell × cells`; `rowCount = floor(len/spacing)`                        | `src/domain/planner.test.ts` |
+| §4c — frost dates      | avg last-spring / first-autumn 0 °C crossings from history                                                                                 | _M1 — `climate.test.ts`_     |
+| §4e — start method     | direct / indoor / buy selection by date vs frost window; indoor→transplant phase switch                                                    | _M4_                         |
+| §5.2–5.3 — twin        | accumulated GDD → stage + projections; observation re-anchors baseline; drift bias                                                         | _M4 — `twin.test.ts`_        |
+| §5.5 — task engine     | idempotent generation/expiry via `generatedBy` keys                                                                                        | _M5 — `tasks.test.ts`_       |
+| §5a — weeds            | flush trigger on rain threshold; hoeable window opens then closes; reset on action                                                         | _M4_                         |
 
 ## The coverage gate
 
