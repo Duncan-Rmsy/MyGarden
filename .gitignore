@@ -6,6 +6,10 @@ dev-dist
 .DS_Store
 coverage
 
+# Mutation testing (opt-in, see TESTING.md) — sandboxes and reports
+.stryker-tmp
+reports
+
 # Editor
 .vscode/*
 !.vscode/extensions.json
