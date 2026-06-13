@@ -25,9 +25,9 @@ Three connected experiences:
 - **Crop catalog**: a curated, local JSON/SQLite database of ~40 common vegetables and herbs with
   per-crop data (spacing, sowing depth, days to germination/maturity, frost tolerance, base
   temperature for growth, growth stages, common tasks).
-- **Planting planner**: drag crops onto a simple grid layout of each bed (square-foot style cells),
-  with spacing validation and a generated planting calendar (sow indoors / direct sow /
-  transplant windows computed from frost dates).
+- **Planting planner**: tap-to-place crops onto a to-scale grid layout of each bed (see §4a),
+  with spacing respected via per-crop density and a generated planting calendar (sow indoors /
+  direct sow / transplant windows computed from frost dates).
 - **Plantings**: when you actually sow/transplant, record it — this instantiates a plant (or row)
   in the twin.
 - **Digital twin (rules-based)**:
@@ -121,13 +121,18 @@ models without touching the UI.
 Garden      { id, name, lat, lon, lastFrostDate, firstFrostDate, hardinessZone }
 Bed         { id, gardenId, name, widthCm, lengthCm, sunExposure: 'full'|'partial'|'shade' }
 Crop        { id, name, variety?, family,            // catalog entry (read-only seed data)
-              spacingCm, sowDepthCm, daysToGerminate: [min,max],
+              spacingCm, rowSpacingCm?, sowDepthCm,
+              habit: 'compact'|'row'|'sprawling'|'climbing',  // default placement + which sprite
+              daysToGerminate: [min,max],
               daysToMaturity: [min,max], gddToMaturity?, baseTempC,
               frostTolerance: 'hardy'|'semi'|'tender',
               sowWindows: RelativeWindow[],           // e.g. indoors: lastFrost-6w..-4w
               stages: StageDef[],                     // gdd or day thresholds per stage
               careRules: CareRule[] }                 // watering cadence, feeding, thinning…
-Planting    { id, bedId, cropId, cell: {x,y}, method: 'direct'|'transplant'|'indoors',
+Planting    { id, bedId, cropId,
+              footprint: {x,y,w,h},                   // rect of grid cells the planting occupies
+              plantCount,                             // derived from spacing × area, then stored
+              method: 'direct'|'transplant'|'indoors',
               sownAt?, transplantedAt?, status: 'planned'|'active'|'done'|'failed' }
 Observation { id, plantingId, at, kind: 'stage_reached'|'note'|'photo'(v2),
               stage?, note? }                         // re-anchors the twin
@@ -135,6 +140,49 @@ WeatherDay  { date, tMinC, tMaxC, rainMm, source: 'history'|'forecast' }   // ca
 Task        { id, plantingId?, bedId?, type, title, why, dueDate,
               status: 'pending'|'done'|'snoozed'|'obsolete', generatedBy }  // rule id, for dedupe
 ```
+
+## 4a. Garden layout & the planner
+
+Units are **metric** (cm/m) throughout; bed dimensions and spacing are stored in cm. The chosen
+placement model is **a grid scaffold backed by each crop's true spacing** — accurate underneath,
+thumb-friendly on top.
+
+**The model**
+
+- A bed is drawn to scale from its real `widthCm × lengthCm`, overlaid with a grid of cells
+  (default 30cm — the classic "square-foot" feel; cell size is a per-garden setting).
+- Spacing is respected by *deriving* density from real spacing, never hand-placing plants. For a
+  crop with in-row `spacingCm`, plants that fit in one cell = `floor(cellSize / spacingCm)²`
+  (e.g. 30cm cell → 16 carrots @7cm, 4 lettuce @15cm, 1 broccoli @45cm).
+- Crops larger than a cell (sprawling/climbing habits) claim a multi-cell block (e.g. a 2×2
+  footprint for squash).
+- **Rows** fall out of the same model: a 1-cell-wide footprint dragged along the bed holds
+  `rowLength / spacingCm` plants.
+- All of this is **pure functions over `spacingCm`** living in the planner module (no UI/storage
+  coupling, heavily unit-tested): `plantsPerCell(crop, cellCm)`, `capacity(footprint, crop)`.
+
+**Interaction (mobile-first)**
+
+- Primary gesture is **tap-to-place**, not drag: tap a crop in the bottom tray, then tap or drag
+  across cells to fill them. A slide-up cell sheet shows contents and lets you adjust count/clear.
+- Pinch-zoom and pan the bed; large touch targets; haptic tick on placement.
+- The crop tray is **filtered to what's plantable now** given the garden's frost dates, so the UI
+  steers good choices instead of allowing out-of-season plantings.
+- Live validation: can't over-fill a cell; per-bed remaining capacity shown as you go.
+
+**Engagement — the layout *is* the twin's living map**
+
+Rather than a static diagram, the bed renders each plant at its **current simulated size and
+stage** (from the digital twin in §5): sprouts in spring, full plants by midsummer, fruit when
+fruiting. This reuses the simulation instead of building a separate render path, and unlocks a
+**season scrubber** — a time slider that animates the bed filling in and maturing across the
+season from the twin's projections ("what will this bed look like in August? will the squash
+smother the lettuce?"). Supporting touches: crop-family colour coding, a sun/shade gradient per
+bed, illustrated per-habit plant sprites, and celebratory moments on first planting and first
+harvest.
+
+(Free-form resizable "patches" on a to-scale canvas are a richer desktop/V2 interaction; the
+grid model above is the v1 build.)
 
 ## 5. The digital twin — how the simulation works
 
