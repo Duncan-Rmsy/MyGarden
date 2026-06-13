@@ -136,6 +136,8 @@ Planting    { id, bedId, cropId,
               sownAt?, transplantedAt?, status: 'planned'|'active'|'done'|'failed' }
 Observation { id, plantingId, at, kind: 'stage_reached'|'note'|'photo'(v2),
               stage?, note? }                         // re-anchors the twin
+WeedState   { bedId, cohortStartedAt?, lastWeededAt?, seedBankFactor }      // per-bed weed twin (§5a)
+Cultivation { id, bedId, at, amount: 'none'|'some'|'lots' }  // "hoed bed X"; re-anchors weed clock
 WeatherDay  { date, tMinC, tMaxC, rainMm, source: 'history'|'forecast' }   // cached per garden
 Task        { id, plantingId?, bedId?, type, title, why, dueDate,
               status: 'pending'|'done'|'snoozed'|'obsolete', generatedBy }  // rule id, for dedupe
@@ -208,6 +210,46 @@ Example task rules for v1:
 - `water` — cadence per crop, skipped if recent rainfall > threshold.
 - `frost_warning` — forecast min temp below tolerance of any active tender planting.
 - `harvest_window` — projected maturity reached.
+- `weed_window` — a weed flush is reaching the easy-to-hoe stage in a bed (see §5a): "hoe bed X
+  in the next ~N days while the weeds are tiny."
+
+## 5a. Modelling weeds
+
+A second, lightweight twin running per **bed** (not per planting), because the actionable insight
+is "go hoe this bed now." It reuses the same weather feed and the observation-anchoring pattern as
+the crop twin, so it adds one bed-level state, one rule, and one kind of check-in — not a new
+engine.
+
+**The insight being modelled:** weeds are trivially killed with a hoe at the "white thread" /
+cotyledon stage and become a chore once rooted, and germination comes in **flushes** triggered by
+moisture and warmth. So the goal is to predict the start of each easy-to-hoe window and prompt
+then, with a frequency that rises and falls with the weather — exactly as in the field.
+
+**How it works:**
+
+1. **Flush trigger**: a rainfall (or logged irrigation) event over a threshold starts a weed
+   cohort for that bed.
+2. **Flush clock**: the cohort accumulates GDD (weeds have a low base temp) from the moisture
+   event; after a small threshold it reaches the hoeable thread stage — the **start of the
+   optimal window** — and after a larger one it's established and needs hand-pulling (window
+   closed). Warm + moist → window opens in days and recurs often; cool or dry → slow or paused.
+   This is what makes the prompt frequency track the weather.
+3. **Reset on action**: logging a "hoed/weeded bed X" check-in re-anchors the clock (like a crop
+   observation re-anchors growth). The user also reports how much was there (lots/some/none),
+   which tunes a **per-bed seed-bank intensity factor** over time — the same correction-factor
+   idea used for crops, since weed pressure is wildly garden-specific and can't be known up front.
+4. **Canopy suppression**: weed pressure in a planting's footprint falls once that crop's canopy
+   closes — and the crop twin already tracks each plant's simulated size, so suppression falls out
+   of existing state. Weeding prompts taper as beds fill in.
+
+**Caveat:** the model predicts *timing of flushes*, not which species or how dense your seed bank
+is; early estimates lean on the per-bed factor learned from your weeding check-ins, and the prompt
+is always framed as "worth a quick look," never a guarantee.
+
+**Scope note:** the core flush-clock + `weed_window` prompt is small enough to land in the v1 twin
+since it reuses the GDD/rainfall engine. The seed-bank learning and canopy-based suppression are
+natural early-V2 refinements. The advanced *stale-seedbed* workflow (deliberately flush-and-kill a
+bed before sowing) is a V2/V3 technique.
 
 ## 6. Screens (v1)
 
@@ -229,8 +271,8 @@ Example task rules for v1:
 | 1 | Garden setup | Onboarding, location → frost dates, bed CRUD | small |
 | 2 | Crop catalog | Seed data for ~40 crops, catalog browsing UI | medium (data entry heavy) |
 | 3 | Planner | Bed grid, crop placement, spacing validation, planting calendar | medium |
-| 4 | Twin core | Weather client + cache, GDD engine, stage estimation, observations/anchoring — pure TS + tests first | medium |
-| 5 | Task engine | Rules above, idempotent generation, Today view | medium |
+| 4 | Twin core | Weather client + cache, GDD engine, stage estimation, observations/anchoring, weed flush-clock (§5a) — pure TS + tests first | medium |
+| 5 | Task engine | Rules above (incl. `weed_window`), idempotent generation, Today view | medium |
 | 6 | Notifications | Web push + in-app feed, nightly recompute | small |
 | 7 | Polish | Plant detail timeline, empty states, install prompt, offline hardening | small |
 
@@ -251,5 +293,8 @@ the app fulfils the core promise.
   recompute server-side so reminders arrive even when the app stays closed.
 - **Indoor seedlings** don't experience outdoor weather. V1 models the indoor phase on calendar
   days at an assumed room temperature; GDD starts at transplant.
+- **Weed pressure is garden-specific** (§5a). The flush *timing* model is generic, but how many
+  weeds actually appear depends on your unedited seed bank. Mitigation: learn a per-bed intensity
+  factor from weeding check-ins and frame prompts as "worth a look," not certainties.
 - **Where is the garden?** Frost dates and the weather feed need a location — onboarding asks, but
   if you tell me now I can tune the default catalog windows.
