@@ -18,29 +18,56 @@ Three connected experiences:
 
 ## 2. Scope by version
 
-### V1 — Planner + basic twin (this build)
+### V1 — core loop (this build): the shortest path to a trustworthy daily prompt
+
+The guiding cut: ship the smallest thing that earns a gardener's trust with *timely, correct
+prompts*, then add depth. Everything below is on the critical path to that; richer modelling
+(weeds, pests, capacity planning, the full-catalog GDD upgrade) is deliberately held for V1.5.
 
 - **Garden setup**: define beds (name, dimensions, sun exposure), set location → derive local
-  first/last frost dates from historical weather (§4c).
-- **Crop catalog**: a curated, local JSON/SQLite database of ~40 common vegetables and herbs with
-  per-crop data (spacing, sowing depth, days to germination/maturity, frost tolerance, base
-  temperature for growth, growth stages, common tasks).
+  first/last frost dates **and per-garden climate normals** from the same historical-weather pull
+  (§4c). Location is always asked at onboarding and never hard-coded.
+- **Crop catalog**: the full curated set of ~40 crops ships for the *planner* (spacing, frost-
+  relative windows, habit — the cheap fields), but only the **~10 crops actually grown first are
+  hand-tuned with real GDD + per-stage thresholds**; the rest run day-range fallbacks until
+  upgraded (§4b, §8). Depth where it's used, breadth where it's not.
 - **Planting planner**: tap-to-place crops onto a to-scale grid layout of each bed (see §4a),
   with spacing respected via per-crop density and a generated planting calendar (sow indoors /
   direct sow / transplant windows computed from frost dates).
-- **Plantings**: when you actually sow/transplant, record it — this instantiates a plant (or row)
-  in the twin.
+- **Plantings & start method**: when you actually sow/transplant, record it — this instantiates a
+  plant (or row) in the twin. The start-method choice and the indoor→transplant lifecycle with a
+  frost-free indoor climate are in scope (§4e); *capacity warnings* for propagation zones are held
+  for V1.5.
 - **Digital twin (rules-based)**:
   - Growth model driven by **growing degree days (GDD)** accumulated from daily weather
-    (Open-Meteo, free, no API key) with a calendar-days fallback when offline.
+    (Open-Meteo, free, no API key), with a **daily upper cap** so heat doesn't over-accumulate and
+    a calendar-days fallback when offline.
+  - **Projects past the 16-day forecast** by blending the live forecast into the garden's climate
+    normals (§4c), so harvest dates months out are estimable — with a confidence band that widens
+    the further ahead it projects.
   - Each planting advances through stages: *seed → germinated → seedling → vegetative →
     flowering → fruiting → harvest-ready → done*.
-  - Manual check-ins ("it germinated today", "first flower") **re-anchor** the simulation so it
-    stays honest.
+  - Manual check-ins ("it germinated today", "first flower") **re-anchor** the simulation, and the
+    twin **records what it had predicted vs. what you observed** and surfaces the delta — honesty
+    as a feature that builds trust over the season.
 - **Task engine**: stage transitions and crop rules emit tasks with due dates; recurring care
-  tasks (watering cadence by crop and recent rainfall); frost warnings from the forecast.
-- **Today view**: the home screen — what needs doing today/this week, plus a status card per bed.
-- **Reminders**: web push notifications (PWA) with an in-app fallback feed.
+  tasks (watering cadence by crop and recent rainfall); **per-crop** frost warnings from the
+  forecast (threshold by `frostTolerance`, not a flat 0°C).
+- **Today view**: the home screen — a **"your garden today" narrative card** that turns the twin's
+  state into one human sentence, what needs doing today/this week, a status card per bed, and
+  celebratory moments (first sprout, first harvest).
+- **Reminders**: a **tiny daily email cron** is the primary, reliable channel (it sidesteps flaky
+  PWA/iOS push); the in-app Today feed always works; web push is best-effort on top (§3, §8).
+
+### V1.5 — depth (fast follows, each additive and off the critical path)
+
+- **Full-catalog GDD upgrade**: extend precise base temps + per-stage thresholds across the ~40
+  crops, prioritised by what users actually plant (favourites + history, §4d, §8).
+- **Weed flush-clock twin (§5a)**: per-bed hoeing prompts driven by the same GDD/rainfall engine.
+- **Season scrubber (§4a)**: the time-slider animation over the twin's projections — *pull this
+  forward the moment the bed renders from the twin, it's cheap delight on work already done.*
+- **Propagation-zone capacity planning**: time-phased slot warnings ("8 trays planned, windowsill
+  holds 4"), beyond v1's peak-occupancy approximation (§4e).
 
 ### V2 — Smarter twin + photos
 
@@ -54,10 +81,10 @@ Three connected experiences:
   variety, days to maturity, spacing, and sowing instructions, then creates/matches a catalog
   entry and pre-fills the planting. (Same vision capability as photo check-ins, different entry
   point — intake vs. progress tracking.)
-- **Background twin + reliable reminders**: a tiny companion notification service (a daily cron
-  job) recomputes the twin server-side and delivers reminders via web push *or email*, so nothing
-  is missed even when the app hasn't been opened. Email doubles as the fallback channel where
-  push is flaky (iOS).
+- **Background twin (server-side recompute)**: V1 already ships the tiny daily email cron for
+  reminders; V2 grows it into a fuller server-side recompute of the twin so richer prompts (pest
+  risk, evapotranspiration watering) arrive even when the app stays closed, still delivered by
+  email with web push best-effort.
 - Natural-language check-ins and Q&A ("the leaves are yellowing at the edges — what's wrong?").
 - Weather-adjusted watering (evapotranspiration model rather than fixed cadence).
 - Succession planting suggestions and bed-rotation warnings (don't follow tomatoes with potatoes).
@@ -78,11 +105,14 @@ Three connected experiences:
 
 ## 3. Architecture
 
-**Local-first PWA.** All data lives on-device (IndexedDB); the only network calls in v1 are to the
-weather API. No accounts, no backend to run — which suits a single-user garden app and keeps it
-free to operate. The one planned exception is v2's notification service: a deliberately small
-cron job that recomputes the twin daily and sends push/email reminders. It only needs the task
-feed, not the full dataset, so the local-first data model is unchanged.
+**Local-first PWA.** All data lives on-device (IndexedDB); the app's own state never leaves the
+device and there are no accounts. The only network calls are to the weather API and to one
+**deliberately tiny notification cron** (pulled into v1) that recomputes the day's tasks and sends
+an email reminder — the reliable channel that PWA/iOS push can't guarantee. The cron needs only
+the task feed, not the full dataset, so the local-first model is unchanged. (A future, strictly
+opt-in "contribute anonymous stage observations" channel — the one piece of cloud that would let
+the catalog's GDD data improve across gardens — is noted as a deliberate fork in §8, not built in
+v1.)
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -113,6 +143,7 @@ feed, not the full dataset, so the local-first data model is unchanged.
 | Weather | Open-Meteo | Free, keyless, historical + 14-day forecast |
 | Tests | Vitest | The twin and task engine are pure functions — test heavily |
 | Hosting | Static (GitHub Pages / Netlify / Vercel) | It's just files |
+| Notifications | One scheduled serverless function (cron) → email | Reliable where push isn't; tiny, stateless |
 
 The key architectural rule: **the planner, twin, and task engine are pure TypeScript modules with
 no React or storage imports.** Given (catalog, plantings, weather history, observations) they
@@ -130,8 +161,9 @@ Crop        { id, name, variety?, family,            // catalog entry (read-only
               spacingCm, rowSpacingCm?, sowDepthCm,
               habit: 'compact'|'row'|'sprawling'|'climbing',  // default placement + which sprite
               daysToGerminate: [min,max],
-              daysToMaturity: [min,max], gddToMaturity?, baseTempC,
-              frostTolerance: 'hardy'|'semi'|'tender',
+              daysToMaturity: [min,max], gddToMaturity?, baseTempC, maxTempC?,  // maxTempC caps daily GDD
+              frostTolerance: 'hardy'|'semi'|'tender', frostKillTempC?,  // damage threshold; falls back from tolerance
+              photoperiodSensitive?: boolean,          // bolts/bulbs by daylength — GDD-only mispredicts (§5)
               pestSusceptibility?: { pest, stages: Stage[], severity }[],  // for §5b (V2)
               startMethods: ('direct'|'indoor'|'buy')[],  // viable ways to start this crop (§4e)
               indoorWeeks?: [min,max],                 // weeks raised in propagation before plant-out
@@ -150,7 +182,7 @@ WeedState   { bedId, cohortStartedAt?, lastWeededAt?, seedBankFactor }      // p
 Cultivation { id, bedId, at, amount: 'none'|'some'|'lots' }  // "hoed bed X"; re-anchors weed clock
 PestSighting{ id, bedId, plantingId?, at, pest, severity }   // §5b (V2); raises local pest factor
 CropPref    { gardenId, cropId, favourite?, hidden? }        // §4d; history-derived favourites computed from Plantings
-WeatherDay  { date, tMinC, tMaxC, rainMm, source: 'history'|'forecast' }   // cached per garden
+WeatherDay  { date, tMinC, tMaxC, rainMm, source: 'history'|'forecast'|'normal' }  // 'normal' = day-of-year climatology for forward projection (§4c)
 Task        { id, plantingId?, bedId?, type, title, why, dueDate,
               status: 'pending'|'done'|'snoozed'|'obsolete', generatedBy }  // rule id, for dedupe
 ```
@@ -239,13 +271,16 @@ weather and derives frost dates), size up the growing space, then choose crops.
 1. **Location** — browser geolocation *or* place-name search → store `lat/lon` only (stays
    on-device; no account). This single answer drives everything downstream: the weather feed and
    the frost dates the whole calendar is relative to (§4b).
-2. **Derive frost dates from history, not a zone table.** Pull ~10 years of daily minimum
-   temperatures for that point from Open-Meteo's free historical API (no key), then compute the
-   average **last spring** and **first autumn** dates the daily min crosses 0°C. This gives real
-   local frost dates *anywhere in the world* without a US-centric hardiness-zone database, and uses
-   the same weather source the twin already depends on. (An approximate hardiness zone can be shown
-   for reference, but the planner runs on the frost dates.) Present the result as **editable** —
-   gardeners know their own microclimate, and a frost pocket or warm wall shifts these by weeks.
+2. **Derive frost dates *and* climate normals from history, not a zone table.** Pull ~10 years of
+   daily min/max temperatures for that point from Open-Meteo's free historical API (no key). From
+   it, compute (a) the average **last spring** and **first autumn** dates the daily min crosses a
+   frost threshold, and (b) **per-garden climate normals** — a day-of-year average tMin/tMax curve.
+   The frost dates anchor the calendar; the normals let the twin **project GDD past the 16-day
+   forecast** (§5) — one pull, used three ways (frost dates, forward projection, confidence). This
+   gives real local figures *anywhere in the world* without a US-centric hardiness-zone database.
+   (An approximate hardiness zone can be shown for reference, but the planner runs on the frost
+   dates.) Present the result as **editable** — gardeners know their own microclimate, and a frost
+   pocket or warm wall shifts these by weeks.
 3. **Growing space** — first bed: name, `widthCm × lengthCm`, sun exposure (metric units).
    Optionally add a **propagation zone** (windowsill / propagator / greenhouse) with a slot
    capacity, used when crops are started indoors (§4e); can also be added later.
@@ -315,25 +350,36 @@ occupancy).
 
 **Scope:** start-method choice, the indoor→transplant lifecycle, and a simple frost-free indoor
 climate are **v1** (the §8 indoor-seedling note already commits to modelling the indoor phase).
-Greenhouse weather-offset modelling and full time-phased capacity planning are v1-stretch / early
-V2.
+Propagation-zone **capacity warnings** (and the time-phased version of them) and greenhouse
+weather-offset modelling are **V1.5 / early V2** — v1 ships the lifecycle without the slot-limit
+prompts.
 
 ## 5. The digital twin — how the simulation works
 
 1. **Accumulate heat**: for each active planting, sum daily GDD =
-   `max(0, (tMin + tMax)/2 − baseTempC)` from its anchor date, using cached weather history and
-   the forecast for the days ahead. While a seed-started plant is in its propagation zone (§4e),
-   the twin uses that zone's climate (frost-free indoor temp, or greenhouse = outdoor + offset)
-   instead of outdoor weather, switching to the bed's outdoor weather at transplant.
+   `max(0, min((tMin + tMax)/2, maxTempC) − baseTempC)` from its anchor date — the `maxTempC` cap
+   stops a heatwave over-accumulating. Use cached weather history and the live forecast, and
+   **beyond the ~16-day forecast horizon fall back to the garden's climate normals (§4c)** so
+   projections can reach a harvest months out. While a seed-started plant is in its propagation
+   zone (§4e), the twin uses that zone's climate (frost-free indoor temp, or greenhouse = outdoor
+   + offset) instead of outdoor weather, switching to the bed's outdoor weather at transplant.
 2. **Map to stage**: compare accumulated GDD against the crop's stage thresholds → current
-   estimated stage + projected dates for upcoming stages (e.g. harvest window).
+   estimated stage + projected dates for upcoming stages (e.g. harvest window). Projected dates
+   carry a **confidence band that widens with distance** (near-term on real forecast, far-term on
+   normals).
 3. **Anchor on reality**: an observation like "germinated on May 3" resets the baseline — the twin
-   trusts you over the model. Drift between predicted and observed stages is stored and used to
-   bias that planting's future predictions (a simple per-planting correction factor).
+   trusts you over the model. The twin **stores what it had predicted alongside what you observed**
+   and shows the delta ("predicted Jun 18, you saw Jun 22"); that drift both builds visible trust
+   and biases the planting's future predictions (a simple per-planting correction factor).
 4. **Fallback**: if a crop has no GDD data or weather is unavailable, fall back to
    days-to-maturity ranges. Every estimate carries a confidence level shown in the UI.
-5. **Emit tasks**: a nightly recompute (on app open + background sync where supported) diffs the
-   twin state against existing tasks and creates/expires tasks idempotently via `generatedBy` keys.
+5. **Photoperiod caveat**: pure GDD doesn't capture **daylength-driven** behaviour — onion bulbing,
+   and bolting in lettuce/spinach/brassicas. Crops flagged `photoperiodSensitive` (§4) mark their
+   bolt/bulb timing as approximate (and can fold a daylength signal in later, since lat + date are
+   known). Don't let the twin promise a precise date it can't model.
+6. **Emit tasks**: a nightly recompute (the v1 email cron, plus on app open / background sync where
+   supported) diffs the twin state against existing tasks and creates/expires tasks idempotently
+   via `generatedBy` keys.
 
 Example task rules for v1:
 
@@ -345,9 +391,10 @@ Example task rules for v1:
   the check-in that anchors the twin).
 - `thin_seedlings`, `transplant_window`, `harden_off` (7 days before transplant window).
 - `water` — cadence per crop, skipped if recent rainfall > threshold.
-- `frost_warning` — forecast min temp below tolerance of any active tender planting.
+- `frost_warning` — forecast min temp below the planting's **per-crop** threshold (from
+  `frostTolerance`/`frostKillTempC`), not a flat 0°C.
 - `harvest_window` — projected maturity reached.
-- `weed_window` — a weed flush is reaching the easy-to-hoe stage in a bed (see §5a): "hoe bed X
+- `weed_window` (V1.5, §5a) — a weed flush is reaching the easy-to-hoe stage in a bed: "hoe bed X
   in the next ~N days while the weeds are tiny."
 - `pest_alert` (V2, §5b) — driver risk crosses threshold with a vulnerable planting present, e.g.
   `slug_watch` (high-risk night + young seedlings) or `bird_net` (before fruit ripens).
@@ -385,10 +432,11 @@ then, with a frequency that rises and falls with the weather — exactly as in t
 is; early estimates lean on the per-bed factor learned from your weeding check-ins, and the prompt
 is always framed as "worth a quick look," never a guarantee.
 
-**Scope note:** the core flush-clock + `weed_window` prompt is small enough to land in the v1 twin
-since it reuses the GDD/rainfall engine. The seed-bank learning and canopy-based suppression are
-natural early-V2 refinements. The advanced *stale-seedbed* workflow (deliberately flush-and-kill a
-bed before sowing) is a V2/V3 technique.
+**Scope note:** the core flush-clock + `weed_window` prompt is a **V1.5** fast-follow — it reuses
+the v1 GDD/rainfall engine, so it's cheap to add once the crop twin is solid, but it's off the
+critical path to the core loop. The seed-bank learning and canopy-based suppression are early-V2
+refinements; the advanced *stale-seedbed* workflow (deliberately flush-and-kill a bed before
+sowing) is a V2/V3 technique.
 
 ## 5b. Pest & predation pressure
 
@@ -426,13 +474,16 @@ prompts from day one.
 
 ## 6. Screens (v1)
 
-1. **Today** (home): task list for today/this week with done/snooze; weather strip; frost alerts.
+1. **Today** (home): a **"your garden today" narrative card** (twin state → one human sentence) up
+   top, then the task list for today/this week with done/snooze; weather strip; frost alerts;
+   celebratory moments on first sprout/first harvest.
 2. **Planner**: pick a bed → grid of cells → tap to assign crops; calendar view of sow/transplant
    windows for everything planned.
 3. **Beds**: bed list → bed detail showing each planting with a stage progress bar and projected
    harvest date.
-4. **Plant detail**: twin timeline (past stages, current estimate, projections), check-in button,
-   observation history, crop care notes.
+4. **Plant detail**: twin timeline (past stages, current estimate, projections with a widening
+   confidence band), **predicted-vs-observed deltas**, check-in button, observation history, crop
+   care notes.
 5. **Settings/Onboarding**: location (geolocate or search), frost dates (suggested, editable),
    notification permission.
 
@@ -440,14 +491,17 @@ prompts from day one.
 
 | # | Milestone | Contents | Rough size |
 |---|---|---|---|
-| 0 | Skaffold | Vite + React + TS + Tailwind + Dexie + PWA shell, CI (lint, typecheck, vitest) | small |
-| 1 | Garden setup | Onboarding, location → frost dates from historical weather (§4c), bed CRUD | small |
-| 2 | Crop catalog | `crops.json` seed data for ~40 crops + clone-to-customise, catalog browsing UI (§4b) | medium (data entry heavy) |
+| 0 | Scaffold | Vite + React + TS + Tailwind + Dexie + PWA shell, CI (lint, typecheck, vitest) | small |
+| 1 | Garden setup | Onboarding, location → frost dates **+ climate normals** from historical weather (§4c), bed CRUD | small |
+| 2 | Crop catalog | `crops.json` for ~40 crops (planner fields) with **~10 hand-tuned for GDD**, clone-to-customise, browsing UI (§4b) | medium (data entry heavy) |
 | 3 | Planner | Bed grid, what-to-plant picker (§4d), crop placement, spacing validation, planting calendar | medium |
-| 4 | Twin core | Weather client + cache, GDD engine, stage estimation, propagation→transplant phase (§4e), observations/anchoring, weed flush-clock (§5a) — pure TS + tests first | medium |
-| 5 | Task engine | Rules above (incl. `weed_window`), idempotent generation, Today view | medium |
-| 6 | Notifications | Web push + in-app feed, nightly recompute | small |
+| 4 | Twin core | Weather client + cache + **normals projection**, capped GDD engine, stage estimation, propagation→transplant (§4e), observations/anchoring + **predicted-vs-actual** — pure TS + tests first | medium |
+| 5 | Task engine | Core rules (sow, harden_off, transplant, water, **per-crop** frost_warning, harvest_window), idempotent generation, Today view + **narrative card** | medium |
+| 6 | Notifications | **Daily email cron (primary)** + in-app feed + best-effort web push, nightly recompute | small |
 | 7 | Polish | Plant detail timeline, empty states, install prompt, offline hardening | small |
+
+**V1.5 (fast follows, §2):** full-catalog GDD upgrade · weed flush-clock twin (§5a) · season
+scrubber (§4a) · propagation-zone capacity warnings (§4e). Pest module (§5b) remains V2.
 
 Each milestone ends usable: after M3 you have a real planning tool even with no twin; after M5
 the app fulfils the core promise.
@@ -459,17 +513,30 @@ the app fulfils the core promise.
   upgrade to precise GDD data for the crops users actually plant first — and the app already knows
   those from favourites and planting history (§4d), so the priority list is self-revealing rather
   than something the user must declare.
-- **iOS web push** requires the PWA to be installed to the home screen (iOS 16.4+) and is less
-  reliable than native. In v1 the in-app Today feed is the dependable channel; v2's notification
-  service resolves this properly, with email as the channel that always works.
-- **Background recompute** on a pure PWA is limited — in v1 the twin mainly updates on app open.
-  Daily use is expected for a gardener, so acceptable; v2's notification service moves the daily
-  recompute server-side so reminders arrive even when the app stays closed.
+- **iOS web push** requires the PWA installed to the home screen (iOS 16.4+) and is unreliable.
+  Resolved in v1, not deferred: the **daily email cron is the primary channel** and the in-app
+  Today feed always works, so reminders don't depend on push at all; web push is a best-effort
+  bonus. V2 grows the same cron into a richer server-side recompute.
+- **Background recompute** on a pure PWA is limited, so v1's **email cron does the daily recompute
+  server-side** (just the task feed) and the app also recomputes on open. Reminders therefore
+  arrive even when the app stays closed; V2 deepens what the server recompute models.
 - **Indoor seedlings** don't experience outdoor weather (§4e). V1 models the propagation phase on
   the zone's assumed (frost-free) climate; the twin switches to outdoor weather at transplant.
 - **Weed pressure is garden-specific** (§5a). The flush *timing* model is generic, but how many
   weeds actually appear depends on your unedited seed bank. Mitigation: learn a per-bed intensity
   factor from weeding check-ins and frame prompts as "worth a look," not certainties.
-- **Where is the garden?** Onboarding derives frost dates from historical weather at runtime
-  (§4c), so no static defaults are needed — but knowing your location now lets me sanity-check the
-  derivation and the catalog's sow windows against a real climate.
+- **Photoperiod, not just heat.** Onion bulbing and bolting (lettuce, spinach, brassicas) are
+  daylength-driven, and pure GDD will mispredict them. Mitigation: flag `photoperiodSensitive`
+  crops, label their bolt/bulb timing "approximate," and optionally fold a daylength term in later
+  (lat + date are already known). Affects when, not whether, those crops are usable.
+- **Data flywheel vs. local-first (a deliberate fork).** With no accounts or telemetry, the stage
+  observations that would calibrate the catalog's GDD data never leave the device — so the catalog
+  can't learn across gardens. For a single-garden tool that's fine. If the ambition grows, the one
+  compounding cloud feature worth adding is a **strictly opt-in, anonymous "contribute stage
+  observations"** channel. Flagged now so observations are modelled as a potential asset, not built
+  in v1.
+- **Where is the garden?** Location is **always asked at onboarding and never a fixed variable** —
+  onboarding derives frost dates and climate normals from historical weather at runtime (§4c), so
+  the app needs no static defaults and works anywhere. The developer's own reference garden
+  (**Sevenoaks, Kent, UK**) is used only to sanity-check the derivation and the catalog's sow
+  windows against a real temperate climate during development; it is not baked into the app.
