@@ -45,7 +45,11 @@ Three connected experiences:
 ### V2 — Smarter twin + photos
 
 - Photo check-ins: snap a seedling, Claude vision API estimates stage/health and re-anchors the
-  twin; flags problems (pests, nutrient deficiency, disease) with suggested actions.
+  twin; flags problems (pests, nutrient deficiency, disease) with suggested actions — the
+  *reactive* counterpart to §5b's predictive pest prompts.
+- **Pest & predation pressure** (§5b): predictive slug and bird risk → timely protective prompts
+  (dusk slug patrol, net fruit before it ripens), driven by weather and the twin's stage data;
+  extensible to other pests as data + a small driver each.
 - **Photo intake**: snap a seed packet or the tag on a bought seedling — Claude vision extracts
   variety, days to maturity, spacing, and sowing instructions, then creates/matches a catalog
   entry and pre-fills the planting. (Same vision capability as photo check-ins, different entry
@@ -126,6 +130,7 @@ Crop        { id, name, variety?, family,            // catalog entry (read-only
               daysToGerminate: [min,max],
               daysToMaturity: [min,max], gddToMaturity?, baseTempC,
               frostTolerance: 'hardy'|'semi'|'tender',
+              pestSusceptibility?: { pest, stages: Stage[], severity }[],  // for §5b (V2)
               sowWindows: RelativeWindow[],           // e.g. indoors: lastFrost-6w..-4w
               stages: StageDef[],                     // gdd or day thresholds per stage
               careRules: CareRule[] }                 // watering cadence, feeding, thinning…
@@ -138,6 +143,7 @@ Observation { id, plantingId, at, kind: 'stage_reached'|'note'|'photo'(v2),
               stage?, note? }                         // re-anchors the twin
 WeedState   { bedId, cohortStartedAt?, lastWeededAt?, seedBankFactor }      // per-bed weed twin (§5a)
 Cultivation { id, bedId, at, amount: 'none'|'some'|'lots' }  // "hoed bed X"; re-anchors weed clock
+PestSighting{ id, bedId, plantingId?, at, pest, severity }   // §5b (V2); raises local pest factor
 WeatherDay  { date, tMinC, tMaxC, rainMm, source: 'history'|'forecast' }   // cached per garden
 Task        { id, plantingId?, bedId?, type, title, why, dueDate,
               status: 'pending'|'done'|'snoozed'|'obsolete', generatedBy }  // rule id, for dedupe
@@ -212,6 +218,8 @@ Example task rules for v1:
 - `harvest_window` — projected maturity reached.
 - `weed_window` — a weed flush is reaching the easy-to-hoe stage in a bed (see §5a): "hoe bed X
   in the next ~N days while the weeds are tiny."
+- `pest_alert` (V2, §5b) — driver risk crosses threshold with a vulnerable planting present, e.g.
+  `slug_watch` (high-risk night + young seedlings) or `bird_net` (before fruit ripens).
 
 ## 5a. Modelling weeds
 
@@ -250,6 +258,40 @@ is always framed as "worth a quick look," never a guarantee.
 since it reuses the GDD/rainfall engine. The seed-bank learning and canopy-based suppression are
 natural early-V2 refinements. The advanced *stale-seedbed* workflow (deliberately flush-and-kill a
 bed before sowing) is a V2/V3 technique.
+
+## 5b. Pest & predation pressure
+
+Same idea as weeds — risk = environmental/stage **driver** × per-crop **vulnerability** → a timely,
+specific prompt — but generalised so any pest is "data + a small driver function." This is the
+*predictive/preventive* half of pest handling; it pairs with the *reactive* photo diagnosis in V2
+(snap the damage → identify → treat). Two worked examples, deliberately different shapes:
+
+- **Slugs — weather-driven.** A risk index rises with recent moisture, mild temperatures (active
+  roughly 5–20°C), and humidity, peaks at night, and concentrates in spring/autumn; it collapses
+  in drought and frost. It only *matters* where vulnerable targets exist — soft young seedlings
+  (lettuce, brassicas, beans, basil), and the crop twin already knows which plantings are young,
+  so vulnerability falls out of existing state and fades as plants toughen. Prompt has tight
+  timing: on a high-risk evening with susceptible seedlings present → "go out after dusk to
+  hand-pick, or set traps / wool pellets / copper tape tonight."
+- **Birds — stage-driven, two windows.** Risk isn't really weather-led; it's tied to stages the
+  twin already projects: (1) at germination/seedling, pigeons pull brassicas, peas, lettuce →
+  prompt to net/cloche from sowing until established; (2) at the ripening/harvest window for
+  strawberries, currants, cherries, tomatoes → prompt to net *before* fruit colours up. The twin's
+  projected dates make both prompts land at the right time, not too late.
+
+**Mechanism (shared):** each pest = a `driver(weather, season, time-of-day)` function + a target
+map (`Crop.pestSusceptibility` weighted by stage). Per bed/planting, `risk = driver × vulnerability`;
+when it crosses a threshold and a vulnerable planting is present, emit a specific protective task.
+A **pest-sighting check-in** ("found slugs / bird damage on bed X") raises that bed's local pest
+factor and can escalate prompts immediately — the same per-bed learning used for weeds. This makes
+the system extensible: aphids and cabbage-white (GDD-driven), carrot fly (calendar/companion),
+etc. are each just another driver + susceptibility data, no new engine.
+
+**Scope note:** the framework plus slugs and birds sit in **early V2**, grouped with the photo
+pest-ID already planned there to form one coherent pest module — and because per-crop
+`pestSusceptibility` is best authored once the v1 catalog exists. The lift is small (it reuses the
+weather feed and twin stage data), so slugs in particular could pull into v1 if you want pest
+prompts from day one.
 
 ## 6. Screens (v1)
 
