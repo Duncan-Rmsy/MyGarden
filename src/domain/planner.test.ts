@@ -52,4 +52,9 @@ describe('cellsAcross', () => {
     expect(cellsAcross(120, 30)).toBe(4);
     expect(cellsAcross(125, 30)).toBe(4); // remainder strip ignored
   });
+
+  it('guards against non-positive inputs', () => {
+    expect(cellsAcross(0, 30)).toBe(0);
+    expect(cellsAcross(120, 0)).toBe(0);
+  });
 });

@@ -34,5 +34,19 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.ts',
     css: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
+      // The pure domain layer is the rigorously-tested core (see TESTING.md), so the
+      // coverage gate is scoped to it. UI gets smoke tests but is not gated on coverage.
+      include: ['src/domain/**/*.ts'],
+      exclude: ['src/domain/**/*.test.ts'],
+      thresholds: {
+        statements: 95,
+        branches: 90,
+        functions: 100,
+        lines: 95,
+      },
+    },
   },
 });

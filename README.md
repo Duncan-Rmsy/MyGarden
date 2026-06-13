@@ -15,7 +15,8 @@ See [`PLAN.md`](./PLAN.md) for the full product and architecture plan.
 - **Vitest** — the planner, twin, and task engine are pure functions and are tested heavily
 
 The architectural rule (PLAN.md §3): the planner, twin, and task engine in `src/domain/` are pure
-TypeScript with no React or storage imports, so they are trivially testable.
+TypeScript with no React or storage imports, so they are trivially testable. Testing requirements
+and the domain coverage gate are documented in [`TESTING.md`](./TESTING.md).
 
 ## Getting started
 
@@ -26,6 +27,7 @@ npm test           # run unit tests
 npm run typecheck  # type-check
 npm run lint       # lint
 npm run build      # production build
+npm run test:coverage  # tests with the domain coverage gate (what CI enforces)
 ```
 
 ## Layout
