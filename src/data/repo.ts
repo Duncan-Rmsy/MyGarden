@@ -3,7 +3,7 @@
 // reads/writes IndexedDB.
 
 import { db } from './db';
-import type { Bed, Crop, CultivationMethod, Garden, SunExposure } from './types';
+import type { Bed, Crop, CultivationMethod, Footprint, Garden, Planting, StartMethod, SunExposure } from './types';
 import type { ClimateNormalDay, DailyWeather } from '../domain/climate';
 import { doyToMMDD } from '../domain/climate';
 
@@ -143,4 +143,45 @@ export async function deleteCustomCrop(id: string): Promise<void> {
   const crop = await db.crops.get(id);
   if (!crop?.isCustom) throw new Error('Only custom crops can be deleted');
   await db.crops.delete(id);
+}
+
+// ── Plantings ─────────────────────────────────────────────────────────────────
+
+export interface NewPlanting {
+  bedId: string;
+  cropId: string;
+  footprint: Footprint;
+  plantCount: number;
+  startMethod: StartMethod;
+}
+
+export interface PlantingWithCrop {
+  planting: Planting;
+  crop: Crop;
+}
+
+export async function listPlantingsWithCrops(bedId: string): Promise<PlantingWithCrop[]> {
+  const plantings = await db.plantings.where('bedId').equals(bedId).toArray();
+  const cropIds = [...new Set(plantings.map((p) => p.cropId))];
+  const crops = await db.crops.bulkGet(cropIds);
+  const cropMap = new Map(
+    crops.filter((c): c is Crop => c !== undefined).map((c) => [c.id, c]),
+  );
+  return plantings
+    .filter((p) => cropMap.has(p.cropId))
+    .map((p) => ({ planting: p, crop: cropMap.get(p.cropId)! }));
+}
+
+export async function createPlanting(input: NewPlanting): Promise<Planting> {
+  const planting: Planting = {
+    id: uid(),
+    status: 'planned',
+    ...input,
+  };
+  await db.plantings.add(planting);
+  return planting;
+}
+
+export async function deletePlanting(id: string): Promise<void> {
+  await db.plantings.delete(id);
 }
