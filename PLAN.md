@@ -144,6 +144,7 @@ Observation { id, plantingId, at, kind: 'stage_reached'|'note'|'photo'(v2),
 WeedState   { bedId, cohortStartedAt?, lastWeededAt?, seedBankFactor }      // per-bed weed twin (§5a)
 Cultivation { id, bedId, at, amount: 'none'|'some'|'lots' }  // "hoed bed X"; re-anchors weed clock
 PestSighting{ id, bedId, plantingId?, at, pest, severity }   // §5b (V2); raises local pest factor
+CropPref    { gardenId, cropId, favourite?, hidden? }        // §4d; history-derived favourites computed from Plantings
 WeatherDay  { date, tMinC, tMaxC, rainMm, source: 'history'|'forecast' }   // cached per garden
 Task        { id, plantingId?, bedId?, type, title, why, dueDate,
               status: 'pending'|'done'|'snoozed'|'obsolete', generatedBy }  // rule id, for dedupe
@@ -174,8 +175,9 @@ thumb-friendly on top.
 - Primary gesture is **tap-to-place**, not drag: tap a crop in the bottom tray, then tap or drag
   across cells to fill them. A slide-up cell sheet shows contents and lets you adjust count/clear.
 - Pinch-zoom and pan the bed; large touch targets; haptic tick on placement.
-- The crop tray is **filtered to what's plantable now** given the garden's frost dates, so the UI
-  steers good choices instead of allowing out-of-season plantings.
+- The crop tray is the **what-to-plant picker** (§4d) — in-season suggestions for the location,
+  favourites first, plus search to add anything — so the UI steers good choices without blocking
+  out-of-season ones the user deliberately adds.
 - Live validation: can't over-fill a cell; per-bed remaining capacity shown as you go.
 
 **Engagement — the layout *is* the twin's living map**
@@ -214,7 +216,10 @@ GDD base temps and per-stage thresholds are added first for the ~10 crops actual
 everything else running on day-ranges until upgraded. Each estimate carries its confidence so the
 UI can be honest about which crops are precisely modelled.
 
-**Proposed v1 starter set (~40), temperate/UK-leaning — to be confirmed/pruned:**
+The full set below **ships with the app**; the user never prunes it up front — personalisation
+happens in-app through suggestions and favourites (§4d).
+
+**v1 catalog set (~40), temperate/UK-leaning:**
 tomato, chilli/pepper, courgette, cucumber, winter squash/pumpkin, aubergine, runner bean,
 bush/French bean, pea, broad bean, lettuce, spinach, chard, kale, cabbage, broccoli/calabrese,
 cauliflower, Brussels sprout, pak choi, rocket, carrot, beetroot, parsnip, radish, turnip, onion,
@@ -223,21 +228,53 @@ basil, coriander, parsley, dill, mint, thyme, rosemary, chives.
 
 ## 4c. Onboarding & climate derivation
 
-The whole calendar is relative to frost dates (§4b), so onboarding's job is to establish a location
-and derive good local frost dates — then create the first bed.
+The setup journey is **where → how big → what to plant**: establish location (which pulls the
+weather and derives frost dates), size up the growing space, then choose crops.
 
 1. **Location** — browser geolocation *or* place-name search → store `lat/lon` only (stays
-   on-device; no account).
+   on-device; no account). This single answer drives everything downstream: the weather feed and
+   the frost dates the whole calendar is relative to (§4b).
 2. **Derive frost dates from history, not a zone table.** Pull ~10 years of daily minimum
    temperatures for that point from Open-Meteo's free historical API (no key), then compute the
    average **last spring** and **first autumn** dates the daily min crosses 0°C. This gives real
    local frost dates *anywhere in the world* without a US-centric hardiness-zone database, and uses
    the same weather source the twin already depends on. (An approximate hardiness zone can be shown
-   for reference, but the planner runs on the frost dates.)
-3. **Confirm/adjust** — present the derived dates as editable; gardeners often know their own
-   microclimate and a frost pocket or warm wall can shift these by weeks.
-4. **Notifications & units** — request notification permission (best-effort, §8); units are metric.
-5. **First bed** — name, `widthCm × lengthCm`, sun exposure → straight into the planner (§4a).
+   for reference, but the planner runs on the frost dates.) Present the result as **editable** —
+   gardeners know their own microclimate, and a frost pocket or warm wall shifts these by weeks.
+3. **Growing space** — first bed: name, `widthCm × lengthCm`, sun exposure (metric units).
+4. **What to plant** — the crop-selection step (§4d): suggestions for the season and location,
+   plus add-your-own and favourites → straight into the planner (§4a).
+5. **Notifications** — request permission (best-effort, §8). Can be deferred.
+
+## 4d. Choosing what to plant
+
+The crop step isn't a list the user types up front — the app ships the full catalog (§4b) and its
+job is to surface the *right* subset, while always letting the user add anything. The picker blends
+three sources:
+
+- **In-season suggestions for this location** — catalog crops whose frost-relative sow/plant window
+  (§4b) is open now or opening soon for *this* garden's derived frost dates. Purely computed from
+  data already present (today's date + frost dates), so it needs no extra input and naturally
+  changes through the year.
+- **Add what you have** — full-catalog search to drop in any crop regardless of season (you may
+  already be holding the seeds), plus clone-to-customise for a specific variety (and, in V2, the
+  seed-packet/tag photo scan that pre-fills the entry).
+- **Favourites** — surfaced first, from two origins: **user-starred** crops, and **history-derived**
+  ones that recur from prior seasons' plantings (grew tomatoes last year → suggested again). Both
+  feed the same favourites rail.
+
+The chosen crops populate the planner's tray (§4a) and the planting calendar. Favourites and
+history also rank the suggestions over time, so the app gets more personal each season without ever
+asking the user to maintain a list.
+
+**It's a recurring tool, not a one-time step.** The same picker is reachable any time from an
+established garden. When a planting finishes — harvested or done — its cells free up, and the app
+surfaces a "what next for this space?" prompt: in-season suggestions for the *now-empty* cells,
+filtered by what can still mature before the first-frost date, and respecting **rotation** (don't
+follow a crop with the same family — the V2 rotation warning, building toward the V3 rotation
+planner). This is the entry point for **succession planting** (V2): a freed summer bed becomes
+autumn salad or a cover crop. So §4d is used at onboarding to fill the garden, and revisited all
+season as space opens up.
 
 ## 5. The digital twin — how the simulation works
 
@@ -359,7 +396,7 @@ prompts from day one.
 | 0 | Skaffold | Vite + React + TS + Tailwind + Dexie + PWA shell, CI (lint, typecheck, vitest) | small |
 | 1 | Garden setup | Onboarding, location → frost dates from historical weather (§4c), bed CRUD | small |
 | 2 | Crop catalog | `crops.json` seed data for ~40 crops + clone-to-customise, catalog browsing UI (§4b) | medium (data entry heavy) |
-| 3 | Planner | Bed grid, crop placement, spacing validation, planting calendar | medium |
+| 3 | Planner | Bed grid, what-to-plant picker (§4d), crop placement, spacing validation, planting calendar | medium |
 | 4 | Twin core | Weather client + cache, GDD engine, stage estimation, observations/anchoring, weed flush-clock (§5a) — pure TS + tests first | medium |
 | 5 | Task engine | Rules above (incl. `weed_window`), idempotent generation, Today view | medium |
 | 6 | Notifications | Web push + in-app feed, nightly recompute | small |
@@ -372,8 +409,9 @@ the app fulfils the core promise.
 
 - **Crop data quality is the product.** GDD thresholds per stage are scattered across extension
   publications and vary by variety. Mitigation: start with day-range fallbacks for all crops and
-  add GDD data for the ~10 crops you actually grow first. *(Question: what do you typically grow?
-  That list should drive catalog priorities.)*
+  upgrade to precise GDD data for the crops users actually plant first — and the app already knows
+  those from favourites and planting history (§4d), so the priority list is self-revealing rather
+  than something the user must declare.
 - **iOS web push** requires the PWA to be installed to the home screen (iOS 16.4+) and is less
   reliable than native. In v1 the in-app Today feed is the dependable channel; v2's notification
   service resolves this properly, with email as the channel that always works.
