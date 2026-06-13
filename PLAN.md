@@ -124,6 +124,8 @@ models without touching the UI.
 ```ts
 Garden      { id, name, lat, lon, lastFrostDate, firstFrostDate, hardinessZone }
 Bed         { id, gardenId, name, widthCm, lengthCm, sunExposure: 'full'|'partial'|'shade' }
+PropagationZone { id, gardenId, name, kind: 'windowsill'|'propagator'|'greenhouse',  // §4e nursery
+              slotCount, climate: 'indoor'|'greenhouse' }   // frost-free; greenhouse = outdoor + offset
 Crop        { id, name, variety?, family,            // catalog entry (read-only seed data)
               spacingCm, rowSpacingCm?, sowDepthCm,
               habit: 'compact'|'row'|'sprawling'|'climbing',  // default placement + which sprite
@@ -131,13 +133,16 @@ Crop        { id, name, variety?, family,            // catalog entry (read-only
               daysToMaturity: [min,max], gddToMaturity?, baseTempC,
               frostTolerance: 'hardy'|'semi'|'tender',
               pestSusceptibility?: { pest, stages: Stage[], severity }[],  // for §5b (V2)
-              sowWindows: RelativeWindow[],           // e.g. indoors: lastFrost-6w..-4w
+              startMethods: ('direct'|'indoor'|'buy')[],  // viable ways to start this crop (§4e)
+              indoorWeeks?: [min,max],                 // weeks raised in propagation before plant-out
+              sowWindows: RelativeWindow[],           // indoor vs direct windows, frost-relative
               stages: StageDef[],                     // gdd or day thresholds per stage
               careRules: CareRule[] }                 // watering cadence, feeding, thinning…
 Planting    { id, bedId, cropId,
               footprint: {x,y,w,h},                   // rect of grid cells the planting occupies
               plantCount,                             // derived from spacing × area, then stored
-              method: 'direct'|'transplant'|'indoors',
+              startMethod: 'direct'|'indoor'|'buy-seedling',          // §4e
+              propagationZoneId?, slots?,             // nursery home + slots used during indoor phase
               sownAt?, transplantedAt?, status: 'planned'|'active'|'done'|'failed' }
 Observation { id, plantingId, at, kind: 'stage_reached'|'note'|'photo'(v2),
               stage?, note? }                         // re-anchors the twin
@@ -242,6 +247,8 @@ weather and derives frost dates), size up the growing space, then choose crops.
    for reference, but the planner runs on the frost dates.) Present the result as **editable** —
    gardeners know their own microclimate, and a frost pocket or warm wall shifts these by weeks.
 3. **Growing space** — first bed: name, `widthCm × lengthCm`, sun exposure (metric units).
+   Optionally add a **propagation zone** (windowsill / propagator / greenhouse) with a slot
+   capacity, used when crops are started indoors (§4e); can also be added later.
 4. **What to plant** — the crop-selection step (§4d): suggestions for the season and location,
    plus add-your-own and favourites → straight into the planner (§4a).
 5. **Notifications** — request permission (best-effort, §8). Can be deferred.
@@ -255,7 +262,8 @@ three sources:
 - **In-season suggestions for this location** — catalog crops whose frost-relative sow/plant window
   (§4b) is open now or opening soon for *this* garden's derived frost dates. Purely computed from
   data already present (today's date + frost dates), so it needs no extra input and naturally
-  changes through the year.
+  changes through the year. Each suggestion also carries its recommended **start method** for right
+  now — seed indoors, direct sow, or buy a seedling (§4e).
 - **Add what you have** — full-catalog search to drop in any crop regardless of season (you may
   already be holding the seeds), plus clone-to-customise for a specific variety (and, in V2, the
   seed-packet/tag photo scan that pre-fills the entry).
@@ -276,11 +284,47 @@ planner). This is the entry point for **succession planting** (V2): a freed summ
 autumn salad or a cover crop. So §4d is used at onboarding to fill the garden, and revisited all
 season as space opens up.
 
+## 4e. Start method & the propagation (nursery) space
+
+Choosing a crop (§4d) isn't enough — *how* you start it decides what the twin simulates and where
+the plant physically lives early on. For each chosen crop, given the date and the garden's frost
+dates, the picker recommends the best start method:
+
+- **Direct seed** — sow straight into the bed once its direct-sow window opens; the twin tracks it
+  outdoors from sowing.
+- **Seed indoors** — for tender or slow crops started before it's warm enough outside (tomato,
+  chilli, brassicas…). The seedling is raised in a **propagation zone** and only planted out once
+  frost risk passes *and* it's big enough, with a harden-off step first.
+- **Buy a seedling** — when it's too late to start from seed in time (or the crop is simply easier
+  bought in), the picker says so and schedules a "buy seedling" task near the plant-out window; the
+  twin starts at the seedling stage, skipping sowing and germination.
+
+**The propagation zone is a first-class place in the twin** — a lightweight indoor/greenhouse
+location with a **slot capacity** (module trays / pots) and a **climate assumption** (indoor room
+temp, frost-free; or a greenhouse modelled as outdoor weather plus a warmth offset and frost
+protection). A seed-started plant therefore has **two homes over its life**: it occupies a nursery
+slot from sowing until plant-out, then **moves** to its bed footprint at transplant — at which
+point the twin switches from the zone's climate to the bed's outdoor weather. The destination bed
+space is reserved in the plan from the start but only fills on the season scrubber (§4a) at the
+transplant date, while the nursery shows the seedlings beforehand.
+
+**Capacity at both ends.** Like a bed's area, a propagation zone has finite slots, so the plan can
+warn "you've planned 8 trays of indoor seedlings but your windowsill holds 4." Because seedlings
+vacate their slots at plant-out, this is time-phased (v1 approximates with peak concurrent
+occupancy).
+
+**Scope:** start-method choice, the indoor→transplant lifecycle, and a simple frost-free indoor
+climate are **v1** (the §8 indoor-seedling note already commits to modelling the indoor phase).
+Greenhouse weather-offset modelling and full time-phased capacity planning are v1-stretch / early
+V2.
+
 ## 5. The digital twin — how the simulation works
 
 1. **Accumulate heat**: for each active planting, sum daily GDD =
    `max(0, (tMin + tMax)/2 − baseTempC)` from its anchor date, using cached weather history and
-   the forecast for the days ahead.
+   the forecast for the days ahead. While a seed-started plant is in its propagation zone (§4e),
+   the twin uses that zone's climate (frost-free indoor temp, or greenhouse = outdoor + offset)
+   instead of outdoor weather, switching to the bed's outdoor weather at transplant.
 2. **Map to stage**: compare accumulated GDD against the crop's stage thresholds → current
    estimated stage + projected dates for upcoming stages (e.g. harvest window).
 3. **Anchor on reality**: an observation like "germinated on May 3" resets the baseline — the twin
@@ -293,7 +337,10 @@ season as space opens up.
 
 Example task rules for v1:
 
-- `sow_window_open` — planting calendar says it's time to sow crop X indoors.
+- `sow_indoors` / `direct_sow` — the crop's indoor or direct-sow window is open (per its chosen
+  start method, §4e).
+- `buy_seedling` — for buy-seedling crops, prompt to acquire a plant near its plant-out window.
+- `propagation_capacity` — planned indoor seedlings exceed a propagation zone's slots (§4e).
 - `germination_check` — expected germination window reached, ask user to confirm (this doubles as
   the check-in that anchors the twin).
 - `thin_seedlings`, `transplant_window`, `harden_off` (7 days before transplant window).
@@ -397,7 +444,7 @@ prompts from day one.
 | 1 | Garden setup | Onboarding, location → frost dates from historical weather (§4c), bed CRUD | small |
 | 2 | Crop catalog | `crops.json` seed data for ~40 crops + clone-to-customise, catalog browsing UI (§4b) | medium (data entry heavy) |
 | 3 | Planner | Bed grid, what-to-plant picker (§4d), crop placement, spacing validation, planting calendar | medium |
-| 4 | Twin core | Weather client + cache, GDD engine, stage estimation, observations/anchoring, weed flush-clock (§5a) — pure TS + tests first | medium |
+| 4 | Twin core | Weather client + cache, GDD engine, stage estimation, propagation→transplant phase (§4e), observations/anchoring, weed flush-clock (§5a) — pure TS + tests first | medium |
 | 5 | Task engine | Rules above (incl. `weed_window`), idempotent generation, Today view | medium |
 | 6 | Notifications | Web push + in-app feed, nightly recompute | small |
 | 7 | Polish | Plant detail timeline, empty states, install prompt, offline hardening | small |
@@ -418,8 +465,8 @@ the app fulfils the core promise.
 - **Background recompute** on a pure PWA is limited — in v1 the twin mainly updates on app open.
   Daily use is expected for a gardener, so acceptable; v2's notification service moves the daily
   recompute server-side so reminders arrive even when the app stays closed.
-- **Indoor seedlings** don't experience outdoor weather. V1 models the indoor phase on calendar
-  days at an assumed room temperature; GDD starts at transplant.
+- **Indoor seedlings** don't experience outdoor weather (§4e). V1 models the propagation phase on
+  the zone's assumed (frost-free) climate; the twin switches to outdoor weather at transplant.
 - **Weed pressure is garden-specific** (§5a). The flush *timing* model is generic, but how many
   weeds actually appear depends on your unedited seed bank. Mitigation: learn a per-bed intensity
   factor from weeding check-ins and frame prompts as "worth a look," not certainties.
