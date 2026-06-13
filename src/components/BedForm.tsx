@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import type { SunExposure } from '../data/types';
+import type { CultivationMethod, SunExposure } from '../data/types';
 
 export interface BedFormValues {
   name: string;
   widthCm: number;
   lengthCm: number;
   sunExposure: SunExposure;
+  cultivationMethod: CultivationMethod;
 }
 
 interface BedFormProps {
@@ -21,6 +22,13 @@ const SUN_OPTIONS: { value: SunExposure; label: string }[] = [
   { value: 'shade', label: 'Shade' },
 ];
 
+const CULTIVATION_OPTIONS: { value: CultivationMethod; label: string }[] = [
+  { value: 'no-dig', label: 'No-dig' },
+  { value: 'in-ground', label: 'In-ground' },
+  { value: 'raised-bed', label: 'Raised bed' },
+  { value: 'container', label: 'Container' },
+];
+
 const inputClass =
   'w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600';
 
@@ -30,6 +38,9 @@ export default function BedForm({ initial, submitLabel, onSubmit, onCancel }: Be
   const [widthCm, setWidthCm] = useState(initial?.widthCm?.toString() ?? '');
   const [lengthCm, setLengthCm] = useState(initial?.lengthCm?.toString() ?? '');
   const [sunExposure, setSunExposure] = useState<SunExposure>(initial?.sunExposure ?? 'full');
+  const [cultivationMethod, setCultivationMethod] = useState<CultivationMethod>(
+    initial?.cultivationMethod ?? 'in-ground',
+  );
 
   const width = Number(widthCm);
   const length = Number(lengthCm);
@@ -41,7 +52,7 @@ export default function BedForm({ initial, submitLabel, onSubmit, onCancel }: Be
       onSubmit={(e) => {
         e.preventDefault();
         if (!valid) return;
-        onSubmit({ name: name.trim(), widthCm: width, lengthCm: length, sunExposure });
+        onSubmit({ name: name.trim(), widthCm: width, lengthCm: length, sunExposure, cultivationMethod });
       }}
     >
       <div>
@@ -102,6 +113,27 @@ export default function BedForm({ initial, submitLabel, onSubmit, onCancel }: Be
               className={[
                 'flex-1 rounded-xl border px-2 py-2 text-sm font-medium transition-colors',
                 sunExposure === opt.value
+                  ? 'border-green-600 bg-green-50 text-green-700'
+                  : 'border-gray-300 text-gray-600',
+              ].join(' ')}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <span className="mb-1 block text-sm font-medium text-gray-700">Cultivation method</span>
+        <div className="grid grid-cols-2 gap-2">
+          {CULTIVATION_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setCultivationMethod(opt.value)}
+              className={[
+                'rounded-xl border px-2 py-2 text-sm font-medium transition-colors',
+                cultivationMethod === opt.value
                   ? 'border-green-600 bg-green-50 text-green-700'
                   : 'border-gray-300 text-gray-600',
               ].join(' ')}

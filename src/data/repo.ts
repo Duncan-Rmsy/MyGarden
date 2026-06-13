@@ -3,7 +3,7 @@
 // reads/writes IndexedDB.
 
 import { db } from './db';
-import type { Bed, Garden, SunExposure } from './types';
+import type { Bed, CultivationMethod, Garden, SunExposure } from './types';
 import type { ClimateNormalDay, DailyWeather } from '../domain/climate';
 import { doyToMMDD } from '../domain/climate';
 
@@ -32,6 +32,7 @@ export interface NewBed {
   widthCm: number;
   lengthCm: number;
   sunExposure: SunExposure;
+  cultivationMethod: CultivationMethod;
 }
 
 /** The single garden, if onboarding has completed. v1 is single-garden. */

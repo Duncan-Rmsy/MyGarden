@@ -11,6 +11,13 @@ const SUN_LABEL: Record<Bed['sunExposure'], string> = {
   shade: 'Shade',
 };
 
+const CULTIVATION_LABEL: Record<Bed['cultivationMethod'], string> = {
+  'no-dig': 'No-dig',
+  'in-ground': 'In-ground',
+  'raised-bed': 'Raised bed',
+  container: 'Container',
+};
+
 type Editor = { mode: 'add' } | { mode: 'edit'; bed: Bed } | null;
 
 export default function Beds() {
@@ -58,7 +65,8 @@ export default function Beds() {
             <div>
               <p className="font-semibold text-gray-900">{bed.name}</p>
               <p className="mt-0.5 text-sm text-gray-500">
-                {bed.widthCm} × {bed.lengthCm} cm · {SUN_LABEL[bed.sunExposure]}
+                {bed.widthCm} × {bed.lengthCm} cm · {SUN_LABEL[bed.sunExposure]} ·{' '}
+                {CULTIVATION_LABEL[bed.cultivationMethod]}
               </p>
             </div>
             <div className="flex gap-1">

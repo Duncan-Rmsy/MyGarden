@@ -12,6 +12,9 @@ export type Stage =
   | 'done';
 
 export type SunExposure = 'full' | 'partial' | 'shade';
+// Cultivation style (§4c step 3, §5a): seeds the weed model's starting seed-bank factor
+// and the watering/fertilising task cadence, so it's captured at first-bed setup.
+export type CultivationMethod = 'no-dig' | 'in-ground' | 'raised-bed' | 'container';
 export type FrostTolerance = 'hardy' | 'semi' | 'tender';
 export type Habit = 'compact' | 'row' | 'sprawling' | 'climbing';
 export type StartMethod = 'direct' | 'indoor' | 'buy-seedling';
@@ -37,6 +40,7 @@ export interface Bed {
   widthCm: number;
   lengthCm: number;
   sunExposure: SunExposure;
+  cultivationMethod: CultivationMethod;
 }
 
 export interface PropagationZone {
