@@ -20,8 +20,8 @@ Three connected experiences:
 
 ### V1 — Planner + basic twin (this build)
 
-- **Garden setup**: define beds (name, dimensions, sun exposure), set location → derive hardiness
-  zone and average first/last frost dates.
+- **Garden setup**: define beds (name, dimensions, sun exposure), set location → derive local
+  first/last frost dates from historical weather (§4c).
 - **Crop catalog**: a curated, local JSON/SQLite database of ~40 common vegetables and herbs with
   per-crop data (spacing, sowing depth, days to germination/maturity, frost tolerance, base
   temperature for growth, growth stages, common tasks).
@@ -192,6 +192,53 @@ harvest.
 (Free-form resizable "patches" on a to-scale canvas are a richer desktop/V2 interaction; the
 grid model above is the v1 build.)
 
+## 4b. Crop catalog
+
+The catalog is the dataset every other system reads from (planner spacing, twin GDD, weeds' canopy,
+pests' susceptibility), so getting its shape right matters more than its initial size.
+
+**How it ships and lives.** A curated `crops.json` ships with the app and is loaded into Dexie on
+first run. Catalog entries are read-only seed data; a user can **clone** one to make a personal
+variety (e.g. "Gardener's Delight tomato") with tweaked numbers — which is also the landing spot
+for V2's seed-packet photo intake (a scanned packet pre-fills a cloned entry).
+
+**Per-crop data** (fields defined in §4, `Crop`): name/variety/family, `spacingCm`/`rowSpacingCm`,
+`habit`, sow depth, days-to-germinate and days-to-maturity ranges, `baseTempC` + optional GDD stage
+thresholds, frost tolerance, pest susceptibility (V2), care rules, and **sow windows expressed
+relative to frost dates** — this is the key idea: a crop says "sow indoors `lastFrost −6w..−4w`,
+transplant `lastFrost +1w..+3w`," so the same catalog auto-localises to any garden once frost dates
+are known (§4c). Nothing in the catalog hard-codes calendar dates.
+
+**Data quality strategy** (from the §8 risk): every crop gets day-range fallbacks immediately;
+GDD base temps and per-stage thresholds are added first for the ~10 crops actually grown, with
+everything else running on day-ranges until upgraded. Each estimate carries its confidence so the
+UI can be honest about which crops are precisely modelled.
+
+**Proposed v1 starter set (~40), temperate/UK-leaning — to be confirmed/pruned:**
+tomato, chilli/pepper, courgette, cucumber, winter squash/pumpkin, aubergine, runner bean,
+bush/French bean, pea, broad bean, lettuce, spinach, chard, kale, cabbage, broccoli/calabrese,
+cauliflower, Brussels sprout, pak choi, rocket, carrot, beetroot, parsnip, radish, turnip, onion,
+shallot, garlic, leek, spring onion, potato, sweetcorn, celery/celeriac, fennel, strawberry,
+basil, coriander, parsley, dill, mint, thyme, rosemary, chives.
+
+## 4c. Onboarding & climate derivation
+
+The whole calendar is relative to frost dates (§4b), so onboarding's job is to establish a location
+and derive good local frost dates — then create the first bed.
+
+1. **Location** — browser geolocation *or* place-name search → store `lat/lon` only (stays
+   on-device; no account).
+2. **Derive frost dates from history, not a zone table.** Pull ~10 years of daily minimum
+   temperatures for that point from Open-Meteo's free historical API (no key), then compute the
+   average **last spring** and **first autumn** dates the daily min crosses 0°C. This gives real
+   local frost dates *anywhere in the world* without a US-centric hardiness-zone database, and uses
+   the same weather source the twin already depends on. (An approximate hardiness zone can be shown
+   for reference, but the planner runs on the frost dates.)
+3. **Confirm/adjust** — present the derived dates as editable; gardeners often know their own
+   microclimate and a frost pocket or warm wall can shift these by weeks.
+4. **Notifications & units** — request notification permission (best-effort, §8); units are metric.
+5. **First bed** — name, `widthCm × lengthCm`, sun exposure → straight into the planner (§4a).
+
 ## 5. The digital twin — how the simulation works
 
 1. **Accumulate heat**: for each active planting, sum daily GDD =
@@ -310,8 +357,8 @@ prompts from day one.
 | # | Milestone | Contents | Rough size |
 |---|---|---|---|
 | 0 | Skaffold | Vite + React + TS + Tailwind + Dexie + PWA shell, CI (lint, typecheck, vitest) | small |
-| 1 | Garden setup | Onboarding, location → frost dates, bed CRUD | small |
-| 2 | Crop catalog | Seed data for ~40 crops, catalog browsing UI | medium (data entry heavy) |
+| 1 | Garden setup | Onboarding, location → frost dates from historical weather (§4c), bed CRUD | small |
+| 2 | Crop catalog | `crops.json` seed data for ~40 crops + clone-to-customise, catalog browsing UI (§4b) | medium (data entry heavy) |
 | 3 | Planner | Bed grid, crop placement, spacing validation, planting calendar | medium |
 | 4 | Twin core | Weather client + cache, GDD engine, stage estimation, observations/anchoring, weed flush-clock (§5a) — pure TS + tests first | medium |
 | 5 | Task engine | Rules above (incl. `weed_window`), idempotent generation, Today view | medium |
@@ -338,5 +385,6 @@ the app fulfils the core promise.
 - **Weed pressure is garden-specific** (§5a). The flush *timing* model is generic, but how many
   weeds actually appear depends on your unedited seed bank. Mitigation: learn a per-bed intensity
   factor from weeding check-ins and frame prompts as "worth a look," not certainties.
-- **Where is the garden?** Frost dates and the weather feed need a location — onboarding asks, but
-  if you tell me now I can tune the default catalog windows.
+- **Where is the garden?** Onboarding derives frost dates from historical weather at runtime
+  (§4c), so no static defaults are needed — but knowing your location now lets me sanity-check the
+  derivation and the catalog's sow windows against a real climate.
