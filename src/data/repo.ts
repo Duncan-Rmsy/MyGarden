@@ -3,7 +3,7 @@
 // reads/writes IndexedDB.
 
 import { db } from './db';
-import type { Bed, CultivationMethod, Garden, SunExposure } from './types';
+import type { Bed, Crop, CultivationMethod, Garden, SunExposure } from './types';
 import type { ClimateNormalDay, DailyWeather } from '../domain/climate';
 import { doyToMMDD } from '../domain/climate';
 
@@ -99,4 +99,48 @@ export async function updateBed(id: string, changes: Partial<Bed>): Promise<void
 
 export async function deleteBed(id: string): Promise<void> {
   await db.beds.delete(id);
+}
+
+// ── Crops ─────────────────────────────────────────────────────────────────────
+
+export async function listCrops(): Promise<Crop[]> {
+  return db.crops.orderBy('name').toArray();
+}
+
+export async function getCrop(id: string): Promise<Crop | undefined> {
+  return db.crops.get(id);
+}
+
+/**
+ * Clone a catalog entry into a user-customisable personal variety (§4b). The caller
+ * supplies any field overrides (e.g. a different name or variety string); everything
+ * else is copied from the source. Only the clone is writable; the original is untouched.
+ */
+export async function cloneCrop(
+  sourceId: string,
+  overrides: Partial<Omit<Crop, 'id' | 'isCustom' | 'clonedFromId'>>,
+): Promise<Crop> {
+  const source = await db.crops.get(sourceId);
+  if (!source) throw new Error(`Crop "${sourceId}" not found`);
+  const clone: Crop = {
+    ...source,
+    ...overrides,
+    id: uid(),
+    isCustom: true,
+    clonedFromId: sourceId,
+  };
+  await db.crops.add(clone);
+  return clone;
+}
+
+export async function updateCrop(id: string, changes: Partial<Crop>): Promise<void> {
+  const crop = await db.crops.get(id);
+  if (!crop?.isCustom) throw new Error('Only custom crops can be edited');
+  await db.crops.update(id, changes);
+}
+
+export async function deleteCustomCrop(id: string): Promise<void> {
+  const crop = await db.crops.get(id);
+  if (!crop?.isCustom) throw new Error('Only custom crops can be deleted');
+  await db.crops.delete(id);
 }

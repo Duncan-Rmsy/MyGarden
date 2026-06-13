@@ -80,7 +80,32 @@ export interface Crop {
   startMethods: StartMethod[];
   indoorWeeks?: Range;
   sowWindows: RelativeWindow[];
-  // stages and careRules land in later milestones.
+  stages?: StageDef[];
+  careRules?: CareRule[];
+  /** true for user-created personal varieties; absent/false for catalog entries */
+  isCustom?: boolean;
+  /** id of the catalog crop this was cloned from */
+  clonedFromId?: string;
+}
+
+/**
+ * A lifecycle stage with the accumulated heat or elapsed days needed to reach it (§4b).
+ * GDD is cumulative from the planting anchor date. Both fields can coexist: GDD is used
+ * when weather is available; `days` is the fallback for all crops and the only entry for
+ * untuned ones.
+ */
+export interface StageDef {
+  stage: Stage;
+  gdd?: number; // cumulative GDD from anchor to reach this stage
+  days?: Range; // [min, max] days from anchor — fallback / universal floor
+}
+
+export interface CareRule {
+  type: 'water' | 'feed' | 'thin' | 'trellis' | 'harden_off';
+  intervalDays?: number; // cadence for water/feed
+  fromStage?: Stage;
+  toStage?: Stage;
+  note?: string;
 }
 
 export interface Footprint {

@@ -21,6 +21,10 @@ export class MyGardenDB extends Dexie {
       plantings: 'id, bedId, cropId, status',
       weatherDays: '[gardenId+date], gardenId, date',
     });
+    // v2: index clonedFromId so user clones are queryable by their source crop.
+    this.version(2).stores({
+      crops: 'id, family, name, clonedFromId',
+    });
   }
 }
 
