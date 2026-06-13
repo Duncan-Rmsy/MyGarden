@@ -12,7 +12,8 @@ See [`PLAN.md`](./PLAN.md) for the full product and architecture plan.
 - **Dexie (IndexedDB)** — local-first storage; the only network calls in v1 are to the weather API
 - **Zustand + TanStack Query** — state and weather caching
 - **vite-plugin-pwa** — offline shell and installability
-- **Vitest** — the planner, twin, and task engine are pure functions and are tested heavily
+- **Vitest + fast-check** — the planner, twin, and task engine are pure functions, tested heavily
+  with example _and_ property-based tests; security is gated too (`npm audit`, CodeQL, Dependabot)
 
 The architectural rule (PLAN.md §3): the planner, twin, and task engine in `src/domain/` are pure
 TypeScript with no React or storage imports, so they are trivially testable. Testing requirements
@@ -28,6 +29,7 @@ npm run typecheck  # type-check
 npm run lint       # lint
 npm run build      # production build
 npm run test:coverage  # tests with the domain coverage gate (what CI enforces)
+npm run audit:ci   # security gate — fails on high/critical advisories
 ```
 
 ## Layout

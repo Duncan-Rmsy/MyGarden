@@ -13,7 +13,9 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:mutation": "npx --yes -p @stryker-mutator/core@^9 -p @stryker-mutator/vitest-runner@^9 stryker run",
+    "audit:ci": "npm audit --audit-level=high"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
@@ -38,6 +40,7 @@
     "eslint": "^10.5.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "fast-check": "^4.8.0",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.4",

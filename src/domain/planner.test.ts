@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import fc from 'fast-check';
 import { blockCapacity, cellsAcross, plantsPerCell, rowCount } from './planner';
 
 describe('plantsPerCell', () => {
@@ -56,5 +57,71 @@ describe('cellsAcross', () => {
   it('guards against non-positive inputs', () => {
     expect(cellsAcross(0, 30)).toBe(0);
     expect(cellsAcross(120, 0)).toBe(0);
+  });
+});
+
+// Property-based tests pin the planner geometry invariants the plan specifies
+// (PLAN.md §4a), searching the input space rather than trusting examples. The cm
+// values are integers because spacing/cell sizes are whole centimetres in the model.
+describe('planner geometry invariants (property-based, PLAN.md §4a)', () => {
+  const cm = fc.integer({ min: 1, max: 1000 });
+  const cells = fc.integer({ min: 1, max: 50 });
+
+  it('plantsPerCell is never negative and never crashes on any sizing', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: -100, max: 1000 }),
+        fc.integer({ min: -100, max: 1000 }),
+        (s, c) => {
+          expect(plantsPerCell(s, c)).toBeGreaterThanOrEqual(0);
+        },
+      ),
+    );
+  });
+
+  it('matches floor(cell/spacing)² when the crop fits a cell (§4a), else 0', () => {
+    fc.assert(
+      fc.property(cm, cm, (spacingCm, cellCm) => {
+        const perCell = plantsPerCell(spacingCm, cellCm);
+        if (spacingCm > cellCm) {
+          expect(perCell).toBe(0);
+        } else {
+          const perSide = Math.floor(cellCm / spacingCm);
+          expect(perCell).toBe(perSide * perSide);
+          expect(perCell).toBeGreaterThanOrEqual(1); // a crop that fits holds ≥1
+        }
+      }),
+    );
+  });
+
+  it('blockCapacity is per-cell density tiled across the block', () => {
+    fc.assert(
+      fc.property(cm, cm, cells, cells, (spacingCm, cellCm, w, h) => {
+        expect(blockCapacity(spacingCm, cellCm, w, h)).toBe(
+          plantsPerCell(spacingCm, cellCm) * w * h,
+        );
+      }),
+    );
+  });
+
+  it('rowCount equals floor(length/spacing) and grows monotonically with length', () => {
+    fc.assert(
+      fc.property(cm, cm, fc.integer({ min: 0, max: 500 }), (spacingCm, rowLengthCm, extra) => {
+        expect(rowCount(spacingCm, rowLengthCm)).toBe(Math.floor(rowLengthCm / spacingCm));
+        expect(rowCount(spacingCm, rowLengthCm + extra)).toBeGreaterThanOrEqual(
+          rowCount(spacingCm, rowLengthCm),
+        );
+      }),
+    );
+  });
+
+  it('cellsAcross never exceeds the true ratio and is non-negative', () => {
+    fc.assert(
+      fc.property(cm, cm, (bedDimCm, cellCm) => {
+        const n = cellsAcross(bedDimCm, cellCm);
+        expect(n).toBeGreaterThanOrEqual(0);
+        expect(n * cellCm).toBeLessThanOrEqual(bedDimCm); // whole cells never overflow the bed
+      }),
+    );
   });
 });
