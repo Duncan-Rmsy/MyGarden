@@ -1,0 +1,1184 @@
+[
+  {
+    "id": "tomato",
+    "name": "Tomato",
+    "family": "Solanaceae",
+    "spacingCm": 60,
+    "sowDepthCm": 0.5,
+    "habit": "climbing",
+    "daysToGerminate": [6, 10],
+    "daysToMaturity": [60, 85],
+    "baseTempC": 10,
+    "maxTempC": 30,
+    "gddToMaturity": 1400,
+    "frostTolerance": "tender",
+    "startMethods": ["indoor", "buy-seedling"],
+    "indoorWeeks": [6, 8],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -6, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0, "endWeeks": 3, "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 100, "days": [6, 10] },
+      { "stage": "seedling",   "gdd": 250, "days": [20, 30] },
+      { "stage": "vegetative", "gdd": 600, "days": [40, 55] },
+      { "stage": "flowering",  "gdd": 900, "days": [55, 70] },
+      { "stage": "fruiting",   "gdd": 1200, "days": [65, 80] },
+      { "stage": "harvest",    "gdd": 1400, "days": [70, 85] }
+    ],
+    "careRules": [
+      { "type": "water",   "intervalDays": 2,  "fromStage": "seedling"   },
+      { "type": "trellis",                      "fromStage": "vegetative" },
+      { "type": "feed",    "intervalDays": 14,  "fromStage": "flowering"  }
+    ]
+  },
+  {
+    "id": "courgette",
+    "name": "Courgette",
+    "family": "Cucurbitaceae",
+    "spacingCm": 90,
+    "sowDepthCm": 2,
+    "habit": "sprawling",
+    "daysToGerminate": [5, 10],
+    "daysToMaturity": [50, 65],
+    "baseTempC": 10,
+    "maxTempC": 35,
+    "gddToMaturity": 700,
+    "frostTolerance": "tender",
+    "startMethods": ["indoor", "direct", "buy-seedling"],
+    "indoorWeeks": [3, 4],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": -2, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 1,  "endWeeks": 3,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 3,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 80,  "days": [5, 10]  },
+      { "stage": "seedling",   "gdd": 180, "days": [15, 25] },
+      { "stage": "vegetative", "gdd": 380, "days": [30, 45] },
+      { "stage": "flowering",  "gdd": 500, "days": [40, 55] },
+      { "stage": "fruiting",   "gdd": 600, "days": [45, 60] },
+      { "stage": "harvest",    "gdd": 700, "days": [50, 65] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 3, "fromStage": "seedling" },
+      { "type": "feed",  "intervalDays": 14, "fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "french-bean",
+    "name": "French Bean",
+    "family": "Leguminosae",
+    "spacingCm": 15,
+    "rowSpacingCm": 45,
+    "sowDepthCm": 4,
+    "habit": "compact",
+    "daysToGerminate": [6, 12],
+    "daysToMaturity": [55, 70],
+    "baseTempC": 10,
+    "maxTempC": 30,
+    "gddToMaturity": 780,
+    "frostTolerance": "tender",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": 0, "endWeeks": 10, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 90,  "days": [6, 12]  },
+      { "stage": "seedling",   "gdd": 200, "days": [15, 25] },
+      { "stage": "vegetative", "gdd": 380, "days": [30, 45] },
+      { "stage": "flowering",  "gdd": 520, "days": [40, 55] },
+      { "stage": "fruiting",   "gdd": 650, "days": [50, 62] },
+      { "stage": "harvest",    "gdd": 780, "days": [55, 70] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 3, "fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "pea",
+    "name": "Pea",
+    "family": "Leguminosae",
+    "spacingCm": 8,
+    "rowSpacingCm": 60,
+    "sowDepthCm": 4,
+    "habit": "climbing",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [65, 90],
+    "baseTempC": 5,
+    "maxTempC": 25,
+    "gddToMaturity": 1050,
+    "frostTolerance": "hardy",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -2, "method": "direct" },
+      { "anchor": "firstFrost", "startWeeks": -14, "endWeeks": -10, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 100,  "days": [7, 14]  },
+      { "stage": "seedling",   "gdd": 300,  "days": [20, 35] },
+      { "stage": "vegetative", "gdd": 550,  "days": [40, 60] },
+      { "stage": "flowering",  "gdd": 750,  "days": [55, 75] },
+      { "stage": "fruiting",   "gdd": 900,  "days": [65, 82] },
+      { "stage": "harvest",    "gdd": 1050, "days": [65, 90] }
+    ],
+    "careRules": [
+      { "type": "trellis", "fromStage": "seedling"   },
+      { "type": "water",   "intervalDays": 4, "fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "lettuce",
+    "name": "Lettuce",
+    "family": "Asteraceae",
+    "spacingCm": 25,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [4, 10],
+    "daysToMaturity": [45, 65],
+    "baseTempC": 4,
+    "maxTempC": 26,
+    "gddToMaturity": 550,
+    "frostTolerance": "semi",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct", "indoor", "buy-seedling"],
+    "indoorWeeks": [3, 4],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -6, "endWeeks": 0,   "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -10, "endWeeks": -6,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": -6, "endWeeks": -2,   "method": "indoor" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 50,  "days": [4, 10]  },
+      { "stage": "seedling",   "gdd": 150, "days": [15, 25] },
+      { "stage": "vegetative", "gdd": 350, "days": [30, 50] },
+      { "stage": "harvest",    "gdd": 550, "days": [45, 65] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 3, "fromStage": "seedling" },
+      { "type": "thin",                      "fromStage": "seedling", "note": "Thin to 25 cm" }
+    ]
+  },
+  {
+    "id": "carrot",
+    "name": "Carrot",
+    "family": "Apiaceae",
+    "spacingCm": 7,
+    "rowSpacingCm": 30,
+    "sowDepthCm": 1,
+    "habit": "row",
+    "daysToGerminate": [10, 21],
+    "daysToMaturity": [70, 90],
+    "baseTempC": 5,
+    "maxTempC": 30,
+    "gddToMaturity": 1400,
+    "frostTolerance": "semi",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": 0,   "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -16,"endWeeks": -10,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 160,  "days": [10, 21] },
+      { "stage": "seedling",   "gdd": 400,  "days": [25, 40] },
+      { "stage": "vegetative", "gdd": 900,  "days": [55, 75] },
+      { "stage": "harvest",    "gdd": 1400, "days": [70, 90] }
+    ],
+    "careRules": [
+      { "type": "thin",  "fromStage": "seedling", "note": "Thin to 7 cm" },
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "beetroot",
+    "name": "Beetroot",
+    "family": "Amaranthaceae",
+    "spacingCm": 10,
+    "rowSpacingCm": 30,
+    "sowDepthCm": 2,
+    "habit": "row",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [55, 75],
+    "baseTempC": 5,
+    "maxTempC": 30,
+    "gddToMaturity": 900,
+    "frostTolerance": "semi",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 8,  "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -14,"endWeeks": -8, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 100, "days": [7, 14]  },
+      { "stage": "seedling",   "gdd": 250, "days": [18, 30] },
+      { "stage": "vegetative", "gdd": 550, "days": [40, 60] },
+      { "stage": "harvest",    "gdd": 900, "days": [55, 75] }
+    ],
+    "careRules": [
+      { "type": "thin",  "fromStage": "seedling", "note": "Thin clusters to 10 cm" },
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "kale",
+    "name": "Kale",
+    "family": "Brassicaceae",
+    "spacingCm": 45,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [5, 12],
+    "daysToMaturity": [55, 80],
+    "baseTempC": 5,
+    "maxTempC": 28,
+    "gddToMaturity": 900,
+    "frostTolerance": "hardy",
+    "startMethods": ["direct", "indoor", "buy-seedling"],
+    "indoorWeeks": [4, 5],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": 6, "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": -6, "endWeeks": -4,"method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4, "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 80,  "days": [5, 12]  },
+      { "stage": "seedling",   "gdd": 200, "days": [18, 30] },
+      { "stage": "vegetative", "gdd": 500, "days": [40, 65] },
+      { "stage": "harvest",    "gdd": 900, "days": [55, 80] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "spinach",
+    "name": "Spinach",
+    "family": "Amaranthaceae",
+    "spacingCm": 15,
+    "rowSpacingCm": 30,
+    "sowDepthCm": 2,
+    "habit": "row",
+    "daysToGerminate": [5, 12],
+    "daysToMaturity": [40, 60],
+    "baseTempC": 4,
+    "maxTempC": 24,
+    "gddToMaturity": 500,
+    "frostTolerance": "hardy",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -6,  "endWeeks": 2,  "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -10,  "endWeeks": -6, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 60,  "days": [5, 12]  },
+      { "stage": "seedling",   "gdd": 150, "days": [15, 25] },
+      { "stage": "vegetative", "gdd": 300, "days": [28, 45] },
+      { "stage": "harvest",    "gdd": 500, "days": [40, 60] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "seedling" },
+      { "type": "thin",  "fromStage": "seedling", "note": "Thin to 15 cm" }
+    ]
+  },
+  {
+    "id": "basil",
+    "name": "Basil",
+    "family": "Lamiaceae",
+    "spacingCm": 25,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [30, 45],
+    "baseTempC": 12,
+    "maxTempC": 35,
+    "gddToMaturity": 500,
+    "frostTolerance": "tender",
+    "startMethods": ["indoor", "buy-seedling"],
+    "indoorWeeks": [4, 6],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -6, "endWeeks": -4, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 2,  "endWeeks": 5,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "gdd": 80,  "days": [7, 14]  },
+      { "stage": "seedling",   "gdd": 200, "days": [20, 30] },
+      { "stage": "vegetative", "gdd": 350, "days": [30, 45] },
+      { "stage": "harvest",    "gdd": 500, "days": [40, 55] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 2, "fromStage": "seedling",
+        "note": "Likes warmth; pinch out flowers to prolong leaf harvest" }
+    ]
+  },
+  {
+    "id": "pepper",
+    "name": "Chilli / Pepper",
+    "family": "Solanaceae",
+    "spacingCm": 45,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [10, 21],
+    "daysToMaturity": [70, 100],
+    "baseTempC": 12,
+    "frostTolerance": "tender",
+    "startMethods": ["indoor", "buy-seedling"],
+    "indoorWeeks": [8, 10],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -10, "endWeeks": -8, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,   "endWeeks": 3,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [10, 21] },
+      { "stage": "seedling",   "days": [30, 45] },
+      { "stage": "vegetative", "days": [50, 70] },
+      { "stage": "flowering",  "days": [65, 85] },
+      { "stage": "fruiting",   "days": [80, 100] },
+      { "stage": "harvest",    "days": [90, 120] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 3, "fromStage": "seedling" },
+      { "type": "feed",  "intervalDays": 14,"fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "aubergine",
+    "name": "Aubergine",
+    "family": "Solanaceae",
+    "spacingCm": 60,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [10, 21],
+    "daysToMaturity": [80, 110],
+    "baseTempC": 12,
+    "frostTolerance": "tender",
+    "startMethods": ["indoor", "buy-seedling"],
+    "indoorWeeks": [8, 10],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -10, "endWeeks": -8, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,   "endWeeks": 3,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [10, 21]   },
+      { "stage": "seedling",   "days": [30, 45]   },
+      { "stage": "vegetative", "days": [55, 75]   },
+      { "stage": "flowering",  "days": [70, 90]   },
+      { "stage": "fruiting",   "days": [85, 105]  },
+      { "stage": "harvest",    "days": [90, 120]  }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 3, "fromStage": "seedling" },
+      { "type": "feed",  "intervalDays": 14,"fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "cucumber",
+    "name": "Cucumber",
+    "family": "Cucurbitaceae",
+    "spacingCm": 45,
+    "sowDepthCm": 2,
+    "habit": "climbing",
+    "daysToGerminate": [5, 10],
+    "daysToMaturity": [50, 70],
+    "baseTempC": 10,
+    "frostTolerance": "tender",
+    "startMethods": ["indoor", "direct", "buy-seedling"],
+    "indoorWeeks": [3, 4],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": -2, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 1,  "endWeeks": 3,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 3,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [5, 10]  },
+      { "stage": "seedling",   "days": [15, 25] },
+      { "stage": "vegetative", "days": [28, 42] },
+      { "stage": "flowering",  "days": [38, 52] },
+      { "stage": "fruiting",   "days": [45, 60] },
+      { "stage": "harvest",    "days": [50, 70] }
+    ],
+    "careRules": [
+      { "type": "water",   "intervalDays": 2, "fromStage": "seedling"   },
+      { "type": "trellis",                     "fromStage": "seedling"   },
+      { "type": "feed",    "intervalDays": 14, "fromStage": "flowering"  }
+    ]
+  },
+  {
+    "id": "winter-squash",
+    "name": "Winter Squash / Pumpkin",
+    "family": "Cucurbitaceae",
+    "spacingCm": 90,
+    "sowDepthCm": 2,
+    "habit": "sprawling",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [80, 120],
+    "baseTempC": 10,
+    "frostTolerance": "tender",
+    "startMethods": ["indoor", "direct"],
+    "indoorWeeks": [3, 4],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": -2, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 1,  "endWeeks": 3,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]   },
+      { "stage": "seedling",   "days": [20, 30]  },
+      { "stage": "vegetative", "days": [35, 55]  },
+      { "stage": "flowering",  "days": [50, 70]  },
+      { "stage": "fruiting",   "days": [65, 90]  },
+      { "stage": "harvest",    "days": [80, 120] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "seedling" },
+      { "type": "feed",  "intervalDays": 14,"fromStage": "fruiting"  }
+    ]
+  },
+  {
+    "id": "runner-bean",
+    "name": "Runner Bean",
+    "family": "Leguminosae",
+    "spacingCm": 20,
+    "rowSpacingCm": 60,
+    "sowDepthCm": 5,
+    "habit": "climbing",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [60, 80],
+    "baseTempC": 10,
+    "frostTolerance": "tender",
+    "startMethods": ["direct", "indoor"],
+    "indoorWeeks": [3, 4],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": -2, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [15, 25] },
+      { "stage": "vegetative", "days": [28, 45] },
+      { "stage": "flowering",  "days": [45, 60] },
+      { "stage": "fruiting",   "days": [55, 70] },
+      { "stage": "harvest",    "days": [60, 80] }
+    ],
+    "careRules": [
+      { "type": "trellis", "fromStage": "seedling"  },
+      { "type": "water",   "intervalDays": 3, "fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "broad-bean",
+    "name": "Broad Bean",
+    "family": "Leguminosae",
+    "spacingCm": 22,
+    "rowSpacingCm": 45,
+    "sowDepthCm": 5,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [80, 100],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -12, "endWeeks": -6, "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -4,  "endWeeks": 2,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]   },
+      { "stage": "seedling",   "days": [20, 35]  },
+      { "stage": "vegetative", "days": [45, 65]  },
+      { "stage": "flowering",  "days": [65, 85]  },
+      { "stage": "fruiting",   "days": [75, 92]  },
+      { "stage": "harvest",    "days": [80, 100] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "cabbage",
+    "name": "Cabbage",
+    "family": "Brassicaceae",
+    "spacingCm": 45,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [5, 10],
+    "daysToMaturity": [70, 110],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["indoor", "direct", "buy-seedling"],
+    "indoorWeeks": [4, 6],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -4, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 4,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [5, 10]   },
+      { "stage": "seedling",   "days": [20, 35]  },
+      { "stage": "vegetative", "days": [40, 70]  },
+      { "stage": "harvest",    "days": [70, 110] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "broccoli",
+    "name": "Broccoli / Calabrese",
+    "family": "Brassicaceae",
+    "spacingCm": 45,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [5, 10],
+    "daysToMaturity": [70, 100],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["indoor", "direct", "buy-seedling"],
+    "indoorWeeks": [4, 6],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -4, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [5, 10]   },
+      { "stage": "seedling",   "days": [20, 35]  },
+      { "stage": "vegetative", "days": [40, 65]  },
+      { "stage": "harvest",    "days": [70, 100] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "cauliflower",
+    "name": "Cauliflower",
+    "family": "Brassicaceae",
+    "spacingCm": 60,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [5, 10],
+    "daysToMaturity": [80, 120],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "startMethods": ["indoor", "direct", "buy-seedling"],
+    "indoorWeeks": [4, 6],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -4, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [5, 10]    },
+      { "stage": "seedling",   "days": [20, 35]   },
+      { "stage": "vegetative", "days": [45, 70]   },
+      { "stage": "harvest",    "days": [80, 120]  }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "brussels-sprout",
+    "name": "Brussels Sprout",
+    "family": "Brassicaceae",
+    "spacingCm": 60,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [5, 10],
+    "daysToMaturity": [100, 140],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["indoor", "direct", "buy-seedling"],
+    "indoorWeeks": [4, 6],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -4, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 2,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 4,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [5, 10]    },
+      { "stage": "seedling",   "days": [20, 35]   },
+      { "stage": "vegetative", "days": [55, 85]   },
+      { "stage": "harvest",    "days": [100, 140] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 6, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "pak-choi",
+    "name": "Pak Choi",
+    "family": "Brassicaceae",
+    "spacingCm": 20,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [4, 8],
+    "daysToMaturity": [35, 55],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct", "indoor"],
+    "indoorWeeks": [3, 4],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": 2,  "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -12,"endWeeks": -6,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [4, 8]   },
+      { "stage": "seedling",   "days": [12, 20] },
+      { "stage": "vegetative", "days": [22, 40] },
+      { "stage": "harvest",    "days": [35, 55] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 3, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "rocket",
+    "name": "Rocket",
+    "family": "Brassicaceae",
+    "spacingCm": 15,
+    "rowSpacingCm": 25,
+    "sowDepthCm": 0.5,
+    "habit": "row",
+    "daysToGerminate": [4, 8],
+    "daysToMaturity": [25, 40],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4,  "endWeeks": 2,   "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -12,  "endWeeks": -6,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [4, 8]   },
+      { "stage": "seedling",   "days": [10, 18] },
+      { "stage": "vegetative", "days": [18, 32] },
+      { "stage": "harvest",    "days": [25, 40] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "chard",
+    "name": "Chard",
+    "family": "Amaranthaceae",
+    "spacingCm": 30,
+    "sowDepthCm": 2,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [50, 70],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 8,  "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -12,"endWeeks": -6, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [18, 30] },
+      { "stage": "vegetative", "days": [35, 55] },
+      { "stage": "harvest",    "days": [50, 70] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "seedling" },
+      { "type": "thin",  "fromStage": "seedling", "note": "Thin to 30 cm" }
+    ]
+  },
+  {
+    "id": "parsnip",
+    "name": "Parsnip",
+    "family": "Apiaceae",
+    "spacingCm": 15,
+    "rowSpacingCm": 30,
+    "sowDepthCm": 1,
+    "habit": "row",
+    "daysToGerminate": [14, 28],
+    "daysToMaturity": [100, 120],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": 2, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 28]   },
+      { "stage": "seedling",   "days": [35, 50]   },
+      { "stage": "vegetative", "days": [70, 90]   },
+      { "stage": "harvest",    "days": [100, 120] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 7, "fromStage": "seedling" },
+      { "type": "thin",  "fromStage": "seedling", "note": "Thin to 15 cm" }
+    ]
+  },
+  {
+    "id": "onion",
+    "name": "Onion",
+    "family": "Alliaceae",
+    "spacingCm": 10,
+    "rowSpacingCm": 25,
+    "sowDepthCm": 1,
+    "habit": "row",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [100, 130],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct", "indoor", "buy-seedling"],
+    "indoorWeeks": [8, 10],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -10, "endWeeks": -6, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": -4,  "endWeeks": 0,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": -4,  "endWeeks": 0,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]    },
+      { "stage": "seedling",   "days": [25, 40]   },
+      { "stage": "vegetative", "days": [60, 90]   },
+      { "stage": "harvest",    "days": [100, 130] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 7,  "fromStage": "seedling"   },
+      { "type": "thin",  "fromStage": "seedling", "note": "Thin to 10 cm" }
+    ]
+  },
+  {
+    "id": "shallot",
+    "name": "Shallot",
+    "family": "Alliaceae",
+    "spacingCm": 20,
+    "rowSpacingCm": 25,
+    "sowDepthCm": 1,
+    "habit": "row",
+    "daysToGerminate": [10, 21],
+    "daysToMaturity": [90, 120],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -6, "endWeeks": -2, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [10, 21]  },
+      { "stage": "seedling",   "days": [25, 40]  },
+      { "stage": "vegetative", "days": [60, 85]  },
+      { "stage": "harvest",    "days": [90, 120] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 7, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "garlic",
+    "name": "Garlic",
+    "family": "Alliaceae",
+    "spacingCm": 15,
+    "rowSpacingCm": 30,
+    "sowDepthCm": 5,
+    "habit": "row",
+    "daysToGerminate": [14, 28],
+    "daysToMaturity": [200, 240],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "firstFrost", "startWeeks": -4, "endWeeks": 4, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 28]   },
+      { "stage": "seedling",   "days": [30, 50]   },
+      { "stage": "vegetative", "days": [90, 150]  },
+      { "stage": "harvest",    "days": [200, 240] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 10, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "leek",
+    "name": "Leek",
+    "family": "Alliaceae",
+    "spacingCm": 15,
+    "rowSpacingCm": 30,
+    "sowDepthCm": 1,
+    "habit": "row",
+    "daysToGerminate": [10, 21],
+    "daysToMaturity": [120, 160],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["indoor", "direct"],
+    "indoorWeeks": [8, 10],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -12, "endWeeks": -8, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": -4,  "endWeeks": 0,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [10, 21]   },
+      { "stage": "seedling",   "days": [35, 55]   },
+      { "stage": "vegetative", "days": [80, 110]  },
+      { "stage": "harvest",    "days": [120, 160] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 7, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "spring-onion",
+    "name": "Spring Onion",
+    "family": "Alliaceae",
+    "spacingCm": 5,
+    "rowSpacingCm": 15,
+    "sowDepthCm": 1,
+    "habit": "row",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [60, 80],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": 10,  "method": "direct" },
+      { "anchor": "firstFrost","startWeeks": -14,"endWeeks": -6,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [20, 30] },
+      { "stage": "vegetative", "days": [40, 60] },
+      { "stage": "harvest",    "days": [60, 80] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "potato",
+    "name": "Potato",
+    "family": "Solanaceae",
+    "spacingCm": 30,
+    "rowSpacingCm": 60,
+    "sowDepthCm": 12,
+    "habit": "compact",
+    "daysToGerminate": [14, 28],
+    "daysToMaturity": [70, 110],
+    "baseTempC": 8,
+    "frostTolerance": "tender",
+    "frostKillTempC": -1,
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 2, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 28]   },
+      { "stage": "seedling",   "days": [28, 45]   },
+      { "stage": "vegetative", "days": [45, 75]   },
+      { "stage": "flowering",  "days": [60, 90]   },
+      { "stage": "harvest",    "days": [70, 110]  }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "sweetcorn",
+    "name": "Sweetcorn",
+    "family": "Poaceae",
+    "spacingCm": 35,
+    "rowSpacingCm": 45,
+    "sowDepthCm": 4,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [70, 90],
+    "baseTempC": 10,
+    "frostTolerance": "tender",
+    "startMethods": ["direct", "indoor"],
+    "indoorWeeks": [3, 4],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": -2, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 2,  "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [20, 30] },
+      { "stage": "vegetative", "days": [40, 60] },
+      { "stage": "flowering",  "days": [60, 75] },
+      { "stage": "harvest",    "days": [70, 90] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "celery",
+    "name": "Celery / Celeriac",
+    "family": "Apiaceae",
+    "spacingCm": 30,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [14, 21],
+    "daysToMaturity": [100, 130],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "startMethods": ["indoor", "buy-seedling"],
+    "indoorWeeks": [8, 10],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -10, "endWeeks": -6, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": 0,   "endWeeks": 4,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 21]   },
+      { "stage": "seedling",   "days": [35, 55]   },
+      { "stage": "vegetative", "days": [70, 95]   },
+      { "stage": "harvest",    "days": [100, 130] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 3, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "fennel",
+    "name": "Fennel",
+    "family": "Apiaceae",
+    "spacingCm": 30,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [65, 85],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": 0, "endWeeks": 10, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [20, 30] },
+      { "stage": "vegetative", "days": [40, 65] },
+      { "stage": "harvest",    "days": [65, 85] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "strawberry",
+    "name": "Strawberry",
+    "family": "Rosaceae",
+    "spacingCm": 35,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [14, 28],
+    "daysToMaturity": [60, 90],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "startMethods": ["buy-seedling", "direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -6, "endWeeks": -2, "method": "buy-seedling" },
+      { "anchor": "firstFrost","startWeeks": -8, "endWeeks": -4, "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 28] },
+      { "stage": "seedling",   "days": [30, 50] },
+      { "stage": "vegetative", "days": [50, 70] },
+      { "stage": "flowering",  "days": [60, 80] },
+      { "stage": "fruiting",   "days": [70, 85] },
+      { "stage": "harvest",    "days": [75, 95] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "flowering" }
+    ]
+  },
+  {
+    "id": "parsley",
+    "name": "Parsley",
+    "family": "Apiaceae",
+    "spacingCm": 20,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [14, 28],
+    "daysToMaturity": [70, 90],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "startMethods": ["direct", "indoor"],
+    "indoorWeeks": [6, 8],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 6,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -4, "method": "indoor" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 28] },
+      { "stage": "seedling",   "days": [30, 50] },
+      { "stage": "vegetative", "days": [55, 75] },
+      { "stage": "harvest",    "days": [70, 90] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "coriander",
+    "name": "Coriander",
+    "family": "Apiaceae",
+    "spacingCm": 15,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [35, 55],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "photoperiodSensitive": true,
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": 0, "endWeeks": 10, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [15, 25] },
+      { "stage": "vegetative", "days": [25, 45] },
+      { "stage": "harvest",    "days": [35, 55] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "dill",
+    "name": "Dill",
+    "family": "Apiaceae",
+    "spacingCm": 20,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [40, 60],
+    "baseTempC": 5,
+    "frostTolerance": "semi",
+    "startMethods": ["direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 8, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [15, 25] },
+      { "stage": "vegetative", "days": [28, 45] },
+      { "stage": "harvest",    "days": [40, 60] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "thyme",
+    "name": "Thyme",
+    "family": "Lamiaceae",
+    "spacingCm": 30,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [14, 28],
+    "daysToMaturity": [70, 90],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["direct", "indoor", "buy-seedling"],
+    "indoorWeeks": [6, 8],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 6,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -4, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 6,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 28] },
+      { "stage": "seedling",   "days": [35, 55] },
+      { "stage": "vegetative", "days": [60, 80] },
+      { "stage": "harvest",    "days": [70, 90] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 7, "fromStage": "seedling",
+        "note": "Drought-tolerant; don't over-water" }
+    ]
+  },
+  {
+    "id": "rosemary",
+    "name": "Rosemary",
+    "family": "Lamiaceae",
+    "spacingCm": 50,
+    "sowDepthCm": 0.5,
+    "habit": "compact",
+    "daysToGerminate": [14, 28],
+    "daysToMaturity": [80, 120],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["buy-seedling", "indoor"],
+    "indoorWeeks": [8, 12],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": 4, "method": "buy-seedling" },
+      { "anchor": "lastFrost", "startWeeks": -12,"endWeeks": -8,"method": "indoor" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 28]   },
+      { "stage": "seedling",   "days": [40, 65]   },
+      { "stage": "vegetative", "days": [65, 100]  },
+      { "stage": "harvest",    "days": [80, 120]  }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 10, "fromStage": "seedling",
+        "note": "Drought-tolerant once established" }
+    ]
+  },
+  {
+    "id": "mint",
+    "name": "Mint",
+    "family": "Lamiaceae",
+    "spacingCm": 30,
+    "sowDepthCm": 0.5,
+    "habit": "sprawling",
+    "daysToGerminate": [14, 21],
+    "daysToMaturity": [60, 90],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["buy-seedling", "direct"],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 8, "method": "buy-seedling" },
+      { "anchor": "lastFrost", "startWeeks": 0,  "endWeeks": 6, "method": "direct" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [14, 21] },
+      { "stage": "seedling",   "days": [25, 40] },
+      { "stage": "vegetative", "days": [45, 70] },
+      { "stage": "harvest",    "days": [60, 90] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 4, "fromStage": "seedling" }
+    ]
+  },
+  {
+    "id": "chives",
+    "name": "Chives",
+    "family": "Alliaceae",
+    "spacingCm": 25,
+    "sowDepthCm": 1,
+    "habit": "compact",
+    "daysToGerminate": [7, 14],
+    "daysToMaturity": [60, 80],
+    "baseTempC": 5,
+    "frostTolerance": "hardy",
+    "startMethods": ["direct", "indoor", "buy-seedling"],
+    "indoorWeeks": [6, 8],
+    "sowWindows": [
+      { "anchor": "lastFrost", "startWeeks": -4, "endWeeks": 4,  "method": "direct" },
+      { "anchor": "lastFrost", "startWeeks": -8, "endWeeks": -4, "method": "indoor" },
+      { "anchor": "lastFrost", "startWeeks": -2, "endWeeks": 4,  "method": "buy-seedling" }
+    ],
+    "stages": [
+      { "stage": "germinated", "days": [7, 14]  },
+      { "stage": "seedling",   "days": [20, 35] },
+      { "stage": "vegetative", "days": [40, 60] },
+      { "stage": "harvest",    "days": [60, 80] }
+    ],
+    "careRules": [
+      { "type": "water", "intervalDays": 5, "fromStage": "seedling" }
+    ]
+  }
+]

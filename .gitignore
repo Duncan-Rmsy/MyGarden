@@ -1,0 +1,20 @@
+node_modules
+dist
+dist-ssr
+dev-dist
+*.local
+.DS_Store
+coverage
+
+# Mutation testing (opt-in, see TESTING.md) — sandboxes and reports
+.stryker-tmp
+reports
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Logs
+*.log
+npm-debug.log*

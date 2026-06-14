@@ -1,0 +1,32 @@
+name: CodeQL
+
+# Static application security testing (SAST). CodeQL scans the TS/JS for security
+# bugs (injection, unsafe DOM sinks, prototype pollution, etc.) on every change to
+# main, on PRs, and weekly to catch newly-published query patterns. See TESTING.md.
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v4

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/api/schema/stryker-core.json",
+  "_comment": "Opt-in mutation testing for the domain core. Run with `npm run test:mutation` (uses npx; not a committed dependency or a CI gate — see TESTING.md). Stryker mutates src/domain and re-runs the suite; surviving mutants are gaps where a real bug would slip past the tests. tsconfigFile points at a deliberately absent file so Stryker skips its tsconfig rewrite — the Vitest runner compiles TS via Vite/esbuild, so no tsc is needed and the npx-isolated run resolves cleanly.",
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "tsconfigFile": "tsconfig.stryker-none.json",
+  "mutate": ["src/domain/**/*.ts", "!src/domain/**/*.test.ts"],
+  "reporters": ["html", "clear-text", "progress"],
+  "thresholds": {
+    "high": 90,
+    "low": 80,
+    "break": 70
+  }
+}
