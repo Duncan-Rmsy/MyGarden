@@ -38,6 +38,16 @@ prompts*, then add depth. Everything below is on the critical path to that; rich
   plant (or row) in the twin. The start-method choice and the indoor→transplant lifecycle with a
   frost-free indoor climate are in scope (§4e); *capacity warnings* for propagation zones are held
   for V1.5.
+- **Mid-season start**: the app must be usable by gardeners who already have crops in the ground
+  when they discover it — this is the majority of early adopters and it cannot be deferred.
+  During onboarding (or any time from the Beds screen), tapping "I already have this planted"
+  opens a quick-entry form: approximate sow/plant date (can be left vague — "about 4 weeks ago")
+  and current visual stage (a simple picture picker: seedling / small plant / bushy / flowering /
+  fruiting). These are saved as observation anchors that re-anchor the twin at the selected stage;
+  the twin then projects forward from that point as normal. The twin records the entry as
+  user-supplied, not model-derived, so the UI shows stage confidently rather than estimating from
+  day zero. V2 upgrades this to a photo of the bed — Claude vision estimates the stage for each
+  visible planting without manual entry.
 - **Digital twin (rules-based)**:
   - Growth model driven by **growing degree days (GDD)** accumulated from daily weather
     (Open-Meteo, free, no API key), with a **daily upper cap** so heat doesn't over-accumulate and
@@ -88,6 +98,14 @@ prompts*, then add depth. Everything below is on the critical path to that; rich
 - Natural-language check-ins and Q&A ("the leaves are yellowing at the edges — what's wrong?").
 - Weather-adjusted watering (evapotranspiration model rather than fixed cadence).
 - Succession planting suggestions and bed-rotation warnings (don't follow tomatoes with potatoes).
+- **Cross-season learning**: the per-garden calibration offset (§5 step 3) is surfaced to the user
+  ("your garden typically runs ~5 days ahead of the model — applying this to this season's
+  projections") and extended to a full per-garden profile. Per-bed depth and cultivation-method
+  adjustments are also refined from observed vs. predicted timing across seasons.
+- **Sun exposure auto-suggestion**: given the garden's `aspect`, lat/lon, and bed positions,
+  compute approximate daily insolation per bed and pre-fill each bed's `sunExposure` rating as a
+  suggestion the user can override. A scan of the garden (photo or short video) lets Claude vision
+  identify shade-casting structures (fences, trees, buildings) and refine the estimates.
 
 ### V3 — Ideas parking lot
 
@@ -98,6 +116,21 @@ prompts*, then add depth. Everything below is on the critical path to that; rich
   in which beds based on previous seasons' plantings (the `Crop.family` field and per-bed
   planting history in the data model already support this). Builds on V2's rotation warnings:
   V2 warns, V3 proposes.
+- **Monetisation — phase 1 (affiliate)**: when a task recommends a product ("apply slug pellets",
+  "feed with liquid tomato fertiliser"), link to a curated, tested product via an affiliate
+  programme. Task-triggered and context-specific — feels like expert advice, not a store. The
+  variety advisor (above) extends the same affiliate channel to seed/seedling sourcing.
+- **Monetisation — phase 2 (curated retail)**: if affiliate volume justifies it, stock and ship a
+  small, edited selection of gardening supplies directly — transforming the task feed into a
+  one-tap supply chain. Only worthwhile at meaningful scale.
+- **Cross-user model calibration**: with sufficient opted-in anonymous observations (§8 data
+  flywheel), cluster gardens by climate signature and soil type, then use aggregated per-stage
+  deltas to improve the catalog's GDD thresholds — the catalog gets more precise without any
+  single user maintaining it.
+- **Precision sun mapping**: a short video walk around the garden at three times of day lets Claude
+  vision construct a per-bed shade map tied to the season, replacing manual `sunExposure` input
+  and enabling micro-climate-aware crop suggestions (e.g. "the north end of bed 2 gets < 4 hours
+  — lettuce and spinach only").
 - Harvest logging and yield history; year-over-year variety comparison.
 - Seed inventory with "sow by" expiry tracking.
 - Sharing/printing the garden plan; multi-garden support.
@@ -153,8 +186,11 @@ models without touching the UI.
 ## 4. Data model
 
 ```ts
-Garden      { id, name, lat, lon, lastFrostDate, firstFrostDate, hardinessZone }
-Bed         { id, gardenId, name, widthCm, lengthCm, sunExposure: 'full'|'partial'|'shade' }
+Garden      { id, name, lat, lon, lastFrostDate, firstFrostDate, hardinessZone,
+              aspect?: 'N'|'NE'|'E'|'SE'|'S'|'SW'|'W'|'NW' }  // garden orientation; used for per-bed sun suggestions
+Bed         { id, gardenId, name, widthCm, lengthCm, sunExposure: 'full'|'partial'|'shade',
+              depthCm?,                                // raised beds/containers; affects root depth, drainage, watering
+              cultivationMethod: 'no-dig'|'in-ground'|'raised-bed'|'container' }
 PropagationZone { id, gardenId, name, kind: 'windowsill'|'propagator'|'greenhouse',  // §4e nursery
               slotCount, climate: 'indoor'|'greenhouse' }   // frost-free; greenhouse = outdoor + offset
 Crop        { id, name, variety?, family,            // catalog entry (read-only seed data)
@@ -179,7 +215,10 @@ Planting    { id, bedId, cropId,
 Observation { id, plantingId, at, kind: 'stage_reached'|'note'|'photo'(v2),
               stage?, note? }                         // re-anchors the twin
 WeedState   { bedId, cohortStartedAt?, lastWeededAt?, seedBankFactor }      // per-bed weed twin (§5a)
-Cultivation { id, bedId, at, amount: 'none'|'some'|'lots' }  // "hoed bed X"; re-anchors weed clock
+Cultivation { id, bedId, plantingId?, at,
+              kind: 'hoed'|'fertilised'|'watered-manually',
+              amount?: 'none'|'some'|'lots',           // for hoed
+              fertType?: 'organic'|'liquid'|'granular'|'slow-release' }  // for fertilised
 PestSighting{ id, bedId, plantingId?, at, pest, severity }   // §5b (V2); raises local pest factor
 CropPref    { gardenId, cropId, favourite?, hidden? }        // §4d; history-derived favourites computed from Plantings
 WeatherDay  { date, tMinC, tMaxC, rainMm, source: 'history'|'forecast'|'normal' }  // 'normal' = day-of-year climatology for forward projection (§4c)
@@ -231,6 +270,15 @@ harvest.
 (Free-form resizable "patches" on a to-scale canvas are a richer desktop/V2 interaction; the
 grid model above is the v1 build.)
 
+**Multiple beds and shapes.** A garden typically has several beds — the planner supports any number
+per garden, each independently sized, named, and sun-rated. V1 bed shapes are rectangles (the vast
+majority of real beds); irregular shapes (L-shaped, keyhole, circular) are a V2 canvas extension.
+
+**Bed depth.** `depthCm` is recorded for raised beds and containers — it doesn't affect the 2D plan
+view, but it does affect the twin: shallower beds warm faster in spring (earlier sow dates) and dry
+out faster (higher watering frequency). Containers (≤ ~30 cm deep) flag crops with deep root
+systems as unsuitable.
+
 ## 4b. Crop catalog
 
 The catalog is the dataset every other system reads from (planner spacing, twin GDD, weeds' canopy,
@@ -281,9 +329,20 @@ weather and derives frost dates), size up the growing space, then choose crops.
    (An approximate hardiness zone can be shown for reference, but the planner runs on the frost
    dates.) Present the result as **editable** — gardeners know their own microclimate, and a frost
    pocket or warm wall shifts these by weeks.
-3. **Growing space** — first bed: name, `widthCm × lengthCm`, sun exposure (metric units).
-   Optionally add a **propagation zone** (windowsill / propagator / greenhouse) with a slot
-   capacity, used when crops are started indoors (§4e); can also be added later.
+3. **Growing space** — first bed: name, `widthCm × lengthCm`, sun exposure, cultivation style
+   (No-dig / In-ground / Raised bed / Container — this adjusts the weed model's starting seed-bank
+   factor and the watering/fertilising task cadence), and optionally `depthCm` for raised beds or
+   containers. Also ask: *which direction does your garden face?* (N/S/E/W — optional; used to
+   suggest per-bed sun exposure and, in V2, to auto-compute approximate insolation per bed). Add
+   more beds any time; the planner is not locked to one bed. Optionally add a **propagation zone**
+   (windowsill / propagator / greenhouse) with a slot capacity (§4e); can be added later.
+3b. **Already planted?** — if crops are already in the ground, the app prompts: "Do you have
+   anything growing right now?" If yes, a condensed quick-entry form appears for each existing
+   crop: approximate date planted (a calendar with a "roughly N weeks ago" shortcut) and current
+   stage from a picture-picker (seedling / small plant / vegetative / flowering / fruiting). These
+   seed the twin with observation anchors so it projects forward from *now* rather than from day
+   zero. Optional and skippable — users can also add existing plantings any time from the Beds
+   screen. V2: a photo of the bed lets Claude vision estimate the stage automatically.
 4. **What to plant** — the crop-selection step (§4d): suggestions for the season and location,
    plus add-your-own and favourites → straight into the planner (§4a).
 5. **Notifications** — request permission (best-effort, §8). Can be deferred.
@@ -371,6 +430,12 @@ prompts.
    trusts you over the model. The twin **stores what it had predicted alongside what you observed**
    and shows the delta ("predicted Jun 18, you saw Jun 22"); that drift both builds visible trust
    and biases the planting's future predictions (a simple per-planting correction factor).
+   **Learning across seasons.** After a full growing season the per-planting deltas accumulate into
+   a per-garden calibration offset — "your conditions consistently run 5 days ahead of the base
+   model" — which is pre-applied to all next-season estimates for that garden, improving accuracy
+   year-on-year without any extra input. This is user-level learning that stays on-device. (V2
+   extends it to a full per-garden profile; V3 opens an opt-in anonymous contribution channel —
+   see §8 data flywheel note.)
 4. **Fallback**: if a crop has no GDD data or weather is unavailable, fall back to
    days-to-maturity ranges. Every estimate carries a confidence level shown in the UI.
 5. **Photoperiod caveat**: pure GDD doesn't capture **daylength-driven** behaviour — onion bulbing,
@@ -394,6 +459,10 @@ Example task rules for v1:
 - `frost_warning` — forecast min temp below the planting's **per-crop** threshold (from
   `frostTolerance`/`frostKillTempC`), not a flat 0°C.
 - `harvest_window` — projected maturity reached.
+- `fertilise` — based on crop care rules and elapsed time since the last logged fertilisation (or
+  since potting for containers); liquid feeds for fast crops, slow-release for long-season ones.
+  In V2, a logged fertilisation event adds a temporary growth-rate multiplier to the twin's forward
+  projection for that planting (similar to the observation correction factor).
 - `weed_window` (V1.5, §5a) — a weed flush is reaching the easy-to-hoe stage in a bed: "hoe bed X
   in the next ~N days while the weeds are tiny."
 - `pest_alert` (V2, §5b) — driver risk crosses threshold with a vulnerable planting present, e.g.
@@ -427,6 +496,12 @@ then, with a frequency that rises and falls with the weather — exactly as in t
 4. **Canopy suppression**: weed pressure in a planting's footprint falls once that crop's canopy
    closes — and the crop twin already tracks each plant's simulated size, so suppression falls out
    of existing state. Weeding prompts taper as beds fill in.
+
+**Cultivation method adjusts starting pressure.** A no-dig bed (compost mulch, no tillage) starts
+with a substantially lower `seedBankFactor` than an in-ground bed, because disturbing the soil
+surface is what brings buried weed seeds into the germination zone. In-ground beds start moderate
+and learn downward from check-ins. Containers start near-zero. This means the model's first
+weed-window prompts are calibrated to the bed's actual management style from day one.
 
 **Caveat:** the model predicts *timing of flushes*, not which species or how dense your seed bank
 is; early estimates lean on the per-bed factor learned from your weeding check-ins, and the prompt
@@ -494,7 +569,7 @@ prompts from day one.
 | 0 | Scaffold | Vite + React + TS + Tailwind + Dexie + PWA shell, CI (lint, typecheck, vitest) | small |
 | 1 | Garden setup | Onboarding, location → frost dates **+ climate normals** from historical weather (§4c), bed CRUD | small |
 | 2 | Crop catalog | `crops.json` for ~40 crops (planner fields) with **~10 hand-tuned for GDD**, clone-to-customise, browsing UI (§4b) | medium (data entry heavy) |
-| 3 | Planner | Bed grid, what-to-plant picker (§4d), crop placement, spacing validation, planting calendar | medium |
+| 3 | Planner | Bed grid, what-to-plant picker (§4d), crop placement, spacing validation, planting calendar, **mid-season quick-entry** (existing plantings from current stage — §4c step 3b) | medium |
 | 4 | Twin core | Weather client + cache + **normals projection**, capped GDD engine, stage estimation, propagation→transplant (§4e), observations/anchoring + **predicted-vs-actual** — pure TS + tests first | medium |
 | 5 | Task engine | Core rules (sow, harden_off, transplant, water, **per-crop** frost_warning, harvest_window), idempotent generation, Today view + **narrative card** | medium |
 | 6 | Notifications | **Daily email cron (primary)** + in-app feed + best-effort web push, nightly recompute | small |
@@ -541,6 +616,17 @@ the app fulfils the core promise.
   compounding cloud feature worth adding is a **strictly opt-in, anonymous "contribute stage
   observations"** channel. Flagged now so observations are modelled as a potential asset, not built
   in v1.
+- **Cultivation method mismatch.** The weed model assumes a generic outdoor soil profile; no-dig
+  and container growing behave very differently. Mitigation: `cultivationMethod` initialises the
+  `seedBankFactor` appropriately from day one, and check-in learning refines it quickly.
+- **Fertilisation complexity.** A logged fertilisation event is easy to capture but hard to model
+  precisely (nutrient release curves vary by product and soil). V1 records the event and shows it
+  in history; V2 applies a simple growth-rate multiplier for liquid feeds (fast uptake) and a
+  duration-weighted boost for slow-release. Don't over-claim the twin's precision here.
+- **Sun exposure accuracy.** User-reported `sunExposure` is a rough self-assessment; `aspect` gives
+  a directional prior but ignores local obstructions (neighbour's tree, a shed). The model uses
+  exposure as a coarse filter (suggest shade-tolerant crops for shaded beds), not a precise
+  insolation figure. V2's auto-suggestion and V3's video mapping progressively improve this.
 - **Where is the garden?** Location is **always asked at onboarding and never a fixed variable** —
   onboarding derives frost dates and climate normals from historical weather at runtime (§4c), so
   the app needs no static defaults and works anywhere. The developer's own reference garden
