@@ -126,7 +126,7 @@ that silently diverges from the plan fails CI. Keep this table current as module
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
 | §5.1 — GDD             | `dailyGdd = max(0, (tMin+tMax)/2 − baseTempC)`; accumulation is non-negative & monotone in days; order-independent for whole-degree inputs | `src/domain/gdd.test.ts`     |
 | §4a — planner geometry | `plantsPerCell = floor(cell/spacing)²` (else 0); `blockCapacity = perCell × cells`; `rowCount = floor(len/spacing)`                        | `src/domain/planner.test.ts` |
-| §4c — frost dates      | avg last-spring / first-autumn 0 °C crossings from history                                                                                 | _M1 — `climate.test.ts`_     |
+| §4c — frost dates      | avg last-spring / first-autumn 0 °C crossings from history; Jun/Jul boundary; single-season fallback                                       | `climate.test.ts`            |
 | §4e — start method     | direct / indoor / buy selection by date vs frost window; indoor→transplant phase switch                                                    | _M4_                         |
 | §5.2–5.3 — twin        | accumulated GDD → stage + projections; observation re-anchors baseline; drift bias                                                         | _M4 — `twin.test.ts`_        |
 | §5.5 — task engine     | idempotent generation/expiry via `generatedBy` keys                                                                                        | _M5 — `tasks.test.ts`_       |

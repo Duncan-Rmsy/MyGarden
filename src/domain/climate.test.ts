@@ -49,6 +49,32 @@ describe('deriveFrostDates', () => {
     expect(frost.lastFrost).toBe('04-05');
     expect(frost.firstFrost).toBe('11-01');
   });
+
+  it('classifies June frosts as spring and July frosts as autumn (month boundary)', () => {
+    // getUTCMonth() <= 5 means Jan–Jun = spring, Jul–Dec = autumn
+    const days = [
+      day('2023-06-30', -1), // June: spring side (index 5 <= 5)
+      day('2023-07-01', -1), // July: autumn side (index 6 > 5)
+    ];
+    const frost = deriveFrostDates(days, 0)!;
+    expect(frost.lastFrost).toBe('06-30');
+    expect(frost.firstFrost).toBe('07-01');
+  });
+
+  it('falls back to the available season when only spring frosts are found', () => {
+    // A climate where autumn never crossed 0 °C in the history window.
+    const days = [day('2023-04-01', -1)];
+    const frost = deriveFrostDates(days, 0)!;
+    expect(frost.lastFrost).toBe('04-01');
+    expect(frost.firstFrost).toBe('04-01'); // reuses spring DOY as fallback
+  });
+
+  it('falls back to the available season when only autumn frosts are found', () => {
+    const days = [day('2023-10-15', -1)];
+    const frost = deriveFrostDates(days, 0)!;
+    expect(frost.firstFrost).toBe('10-15');
+    expect(frost.lastFrost).toBe('10-15'); // reuses autumn DOY as fallback
+  });
 });
 
 describe('deriveNormals', () => {

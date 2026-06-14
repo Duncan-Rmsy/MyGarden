@@ -25,9 +25,9 @@ interface GeocodeResponse {
 interface ArchiveResponse {
   daily?: {
     time: string[];
-    temperature_2m_min: (number | null)[];
-    temperature_2m_max: (number | null)[];
-    precipitation_sum: (number | null)[];
+    temperature_2m_min?: (number | null)[];
+    temperature_2m_max?: (number | null)[];
+    precipitation_sum?: (number | null)[];
   };
 }
 
@@ -82,11 +82,13 @@ export async function fetchHistory(
 
   const out: DailyWeather[] = [];
   for (let i = 0; i < daily.time.length; i++) {
-    const tMinC = daily.temperature_2m_min[i];
-    const tMaxC = daily.temperature_2m_max[i];
-    const rainMm = daily.precipitation_sum[i];
-    if (tMinC === null || tMaxC === null || rainMm === null) continue;
-    out.push({ date: daily.time[i], tMinC, tMaxC, rainMm });
+    const tMinC = daily.temperature_2m_min?.[i] as number | null | undefined;
+    const tMaxC = daily.temperature_2m_max?.[i] as number | null | undefined;
+    const rainMm = daily.precipitation_sum?.[i] as number | null | undefined;
+    // Number.isFinite rejects null, undefined, NaN, Infinity, and non-numeric types
+    // so corrupt or truncated API responses never flow into domain derivations.
+    if (!Number.isFinite(tMinC) || !Number.isFinite(tMaxC) || !Number.isFinite(rainMm)) continue;
+    out.push({ date: daily.time[i], tMinC: tMinC!, tMaxC: tMaxC!, rainMm: rainMm! });
   }
   return out;
 }
