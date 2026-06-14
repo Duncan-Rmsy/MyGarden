@@ -3,7 +3,7 @@
 // reads/writes IndexedDB.
 
 import { db } from './db';
-import type { Bed, Crop, CultivationMethod, Footprint, Garden, Planting, StartMethod, SunExposure } from './types';
+import type { Bed, Crop, CultivationMethod, Footprint, Garden, Planting, PlantingStatus, StartMethod, SunExposure } from './types';
 import type { ClimateNormalDay, DailyWeather } from '../domain/climate';
 import { doyToMMDD } from '../domain/climate';
 
@@ -153,6 +153,10 @@ export interface NewPlanting {
   footprint: Footprint;
   plantCount: number;
   startMethod: StartMethod;
+  /** Override default 'planned' for crops already in the ground. */
+  status?: PlantingStatus;
+  sownAt?: string;
+  currentStage?: Planting['currentStage'];
 }
 
 export interface PlantingWithCrop {
@@ -175,11 +179,21 @@ export async function listPlantingsWithCrops(bedId: string): Promise<PlantingWit
 export async function createPlanting(input: NewPlanting): Promise<Planting> {
   const planting: Planting = {
     id: uid(),
-    status: 'planned',
-    ...input,
+    status: input.status ?? 'planned',
+    bedId: input.bedId,
+    cropId: input.cropId,
+    footprint: input.footprint,
+    plantCount: input.plantCount,
+    startMethod: input.startMethod,
+    ...(input.sownAt && { sownAt: input.sownAt }),
+    ...(input.currentStage && { currentStage: input.currentStage }),
   };
   await db.plantings.add(planting);
   return planting;
+}
+
+export async function updatePlanting(id: string, changes: Partial<Planting>): Promise<void> {
+  await db.plantings.update(id, changes);
 }
 
 export async function deletePlanting(id: string): Promise<void> {

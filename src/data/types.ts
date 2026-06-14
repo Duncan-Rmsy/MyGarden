@@ -128,6 +128,7 @@ export interface Planting {
   sownAt?: string;
   transplantedAt?: string;
   status: PlantingStatus;
+  currentStage?: Stage;
 }
 
 export interface WeatherDay {
