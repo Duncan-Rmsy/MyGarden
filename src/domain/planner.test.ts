@@ -3,6 +3,7 @@ import fc from 'fast-check';
 import {
   blockCapacity,
   cellsAcross,
+  computeRegion,
   cropCellsNeeded,
   footprintsOverlap,
   isFootprintOccupied,
@@ -248,5 +249,36 @@ describe('plantingCalendar', () => {
     if (entries[0].harvestTo) {
       expect(entries[0].harvestTo > entries[0].closesDate).toBe(true);
     }
+  });
+});
+
+describe('computeRegion (drag selection, §4a)', () => {
+  it('returns a 1×1 region for a single-cell tap', () => {
+    expect(computeRegion({ x: 2, y: 3 }, { x: 2, y: 3 })).toEqual({ x: 2, y: 3, w: 1, h: 1 });
+  });
+
+  it('spans from the top-left corner regardless of drag direction', () => {
+    const forward = computeRegion({ x: 1, y: 1 }, { x: 3, y: 2 });
+    const reverse = computeRegion({ x: 3, y: 2 }, { x: 1, y: 1 });
+    expect(forward).toEqual({ x: 1, y: 1, w: 3, h: 2 });
+    expect(reverse).toEqual(forward); // order-independent
+  });
+
+  // Property: width/height are always ≥ 1, the origin is the min corner, and the span is
+  // inclusive of both endpoints — for any two cells, in any order.
+  it('is order-independent with inclusive, positive extents', () => {
+    const cell = fc.record({ x: fc.integer({ min: 0, max: 50 }), y: fc.integer({ min: 0, max: 50 }) });
+    fc.assert(
+      fc.property(cell, cell, (a, b) => {
+        const r = computeRegion(a, b);
+        expect(r).toEqual(computeRegion(b, a));
+        expect(r.x).toBe(Math.min(a.x, b.x));
+        expect(r.y).toBe(Math.min(a.y, b.y));
+        expect(r.w).toBe(Math.abs(a.x - b.x) + 1);
+        expect(r.h).toBe(Math.abs(a.y - b.y) + 1);
+        expect(r.w).toBeGreaterThanOrEqual(1);
+        expect(r.h).toBeGreaterThanOrEqual(1);
+      }),
+    );
   });
 });

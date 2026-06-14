@@ -19,6 +19,7 @@ import {
   blockCapacity,
   plantingCalendar,
   cellsAcross,
+  computeRegion,
 } from '../domain/planner';
 import { cropConfidence } from '../domain/confidence';
 import type { Crop, Bed, Stage, Footprint } from '../data/types';
@@ -237,15 +238,6 @@ function LayoutTab() {
 }
 
 // ── Bed grid with drag-to-select ──────────────────────────────────────────────
-
-function computeRegion(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-): Footprint {
-  const x = Math.min(a.x, b.x);
-  const y = Math.min(a.y, b.y);
-  return { x, y, w: Math.abs(b.x - a.x) + 1, h: Math.abs(b.y - a.y) + 1 };
-}
 
 function BedGridView({
   bed,

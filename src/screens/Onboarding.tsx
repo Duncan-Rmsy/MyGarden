@@ -211,6 +211,7 @@ export default function Onboarding() {
           </p>
           <BedForm
             submitLabel={saving ? 'Setting up your garden…' : 'Finish setup'}
+            submitting={saving}
             onSubmit={(bed) => void finish(bed)}
             onCancel={() => setStep(1)}
           />
