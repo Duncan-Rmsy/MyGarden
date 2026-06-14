@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { blockCapacity, cellsAcross, plantsPerCell, rowCount } from './planner';
+import {
+  blockCapacity,
+  cellsAcross,
+  cropCellsNeeded,
+  footprintsOverlap,
+  isFootprintOccupied,
+  plantingCalendar,
+  plantsPerCell,
+  rowCount,
+} from './planner';
 
 describe('plantsPerCell', () => {
   it('derives square-foot-style density from spacing in a 30cm cell', () => {
@@ -123,5 +132,121 @@ describe('planner geometry invariants (property-based, PLAN.md §4a)', () => {
         expect(n * cellCm).toBeLessThanOrEqual(bedDimCm); // whole cells never overflow the bed
       }),
     );
+  });
+});
+
+describe('cropCellsNeeded', () => {
+  it('returns 1×1 for a crop that fits in one cell', () => {
+    expect(cropCellsNeeded(15, 30)).toEqual({ w: 1, h: 1 }); // lettuce in 30cm cell
+    expect(cropCellsNeeded(30, 30)).toEqual({ w: 1, h: 1 }); // exactly one cell
+  });
+
+  it('returns a square multi-cell block for large crops', () => {
+    expect(cropCellsNeeded(45, 30)).toEqual({ w: 2, h: 2 }); // broccoli
+    expect(cropCellsNeeded(90, 30)).toEqual({ w: 3, h: 3 }); // courgette / squash
+  });
+
+  it('always returns at least 1×1', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 500 }),
+        fc.integer({ min: 1, max: 100 }),
+        (spacing, cell) => {
+          const { w, h } = cropCellsNeeded(spacing, cell);
+          expect(w).toBeGreaterThanOrEqual(1);
+          expect(h).toBeGreaterThanOrEqual(1);
+        },
+      ),
+    );
+  });
+});
+
+describe('footprintsOverlap / isFootprintOccupied', () => {
+  it('detects overlapping footprints', () => {
+    expect(footprintsOverlap({ x: 0, y: 0, w: 2, h: 2 }, { x: 1, y: 1, w: 2, h: 2 })).toBe(true);
+  });
+
+  it('returns false for adjacent (non-overlapping) footprints', () => {
+    expect(footprintsOverlap({ x: 0, y: 0, w: 2, h: 2 }, { x: 2, y: 0, w: 2, h: 2 })).toBe(false);
+    expect(footprintsOverlap({ x: 0, y: 0, w: 1, h: 1 }, { x: 1, y: 0, w: 1, h: 1 })).toBe(false);
+  });
+
+  it('isFootprintOccupied returns true when any existing footprint overlaps', () => {
+    const existing = [{ x: 2, y: 0, w: 1, h: 1 }, { x: 0, y: 3, w: 2, h: 2 }];
+    expect(isFootprintOccupied({ x: 2, y: 0, w: 1, h: 1 }, existing)).toBe(true);
+    expect(isFootprintOccupied({ x: 5, y: 5, w: 1, h: 1 }, existing)).toBe(false);
+  });
+});
+
+describe('plantingCalendar', () => {
+  const FROST = { lastFrostDate: '04-15', firstFrostDate: '10-28' };
+
+  it('marks a window as open when today falls within it', () => {
+    // lastFrost = 2026-04-15; window: -6w to 0 = 2026-03-04 to 2026-04-15
+    const entries = plantingCalendar(
+      [{ anchor: 'lastFrost', startWeeks: -6, endWeeks: 0, method: 'direct' }],
+      [60, 90],
+      FROST,
+      '2026-03-20',
+    );
+    expect(entries[0].status).toBe('open');
+  });
+
+  it('marks a window as upcoming when it opens within 28 days', () => {
+    // window opens 2026-03-04; today is 2026-02-20 → 12 days out
+    const entries = plantingCalendar(
+      [{ anchor: 'lastFrost', startWeeks: -6, endWeeks: 0, method: 'direct' }],
+      [60, 90],
+      FROST,
+      '2026-02-20',
+    );
+    expect(entries[0].status).toBe('upcoming');
+  });
+
+  it('marks a window as closed when it has passed', () => {
+    const entries = plantingCalendar(
+      [{ anchor: 'lastFrost', startWeeks: -6, endWeeks: -4, method: 'direct' }],
+      [60, 90],
+      FROST,
+      '2026-05-01', // well after the window closed on Apr 15 - 4*7 = Mar 18
+    );
+    expect(entries[0].status).toBe('closed');
+  });
+
+  it('marks a window as too-late when maturity would fall after first frost', () => {
+    // lastFrost 2026-04-15, window: +2w to +6w = May 1 to Jun 12
+    // daysToMaturity [180, 200] → earliest harvest = May 1 + 180 = Nov 1, after firstFrost Oct 28
+    const entries = plantingCalendar(
+      [{ anchor: 'lastFrost', startWeeks: 2, endWeeks: 6, method: 'direct' }],
+      [180, 200],
+      FROST,
+      '2026-05-10',
+    );
+    expect(entries[0].status).toBe('too-late');
+  });
+
+  it('omits windows when the relevant frost date is absent', () => {
+    const entries = plantingCalendar(
+      [{ anchor: 'lastFrost', startWeeks: -4, endWeeks: 0, method: 'direct' }],
+      [60, 90],
+      {}, // no frost dates
+      '2026-04-01',
+    );
+    expect(entries).toHaveLength(0);
+  });
+
+  it('harvestFrom/harvestTo are after their respective sow dates', () => {
+    const entries = plantingCalendar(
+      [{ anchor: 'lastFrost', startWeeks: 0, endWeeks: 4, method: 'direct' }],
+      [50, 70],
+      FROST,
+      '2026-04-15',
+    );
+    if (entries[0].harvestFrom) {
+      expect(entries[0].harvestFrom > entries[0].opensDate).toBe(true);
+    }
+    if (entries[0].harvestTo) {
+      expect(entries[0].harvestTo > entries[0].closesDate).toBe(true);
+    }
   });
 });

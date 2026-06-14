@@ -31,6 +31,7 @@ export interface Garden {
   lastFrostDate?: string; // ISO date (MM-DD anchored to year at runtime)
   firstFrostDate?: string;
   hardinessZone?: string;
+  cellSizeCm?: number; // grid cell size for the bed layout (default 30 — §4a)
 }
 
 export interface Bed {
