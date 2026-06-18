@@ -192,10 +192,6 @@ export async function createPlanting(input: NewPlanting): Promise<Planting> {
   return planting;
 }
 
-export async function updatePlanting(id: string, changes: Partial<Planting>): Promise<void> {
-  await db.plantings.update(id, changes);
-}
-
 export async function deletePlanting(id: string): Promise<void> {
   await db.plantings.delete(id);
 }

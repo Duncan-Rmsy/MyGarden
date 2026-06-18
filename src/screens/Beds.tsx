@@ -27,15 +27,21 @@ export default function Beds() {
     [garden?.id],
   );
   const [editor, setEditor] = useState<Editor>(null);
+  const [saving, setSaving] = useState(false);
 
   async function save(values: BedFormValues) {
     if (!garden) return;
-    if (editor?.mode === 'edit') {
-      await updateBed(editor.bed.id, values);
-    } else {
-      await createBed({ gardenId: garden.id, ...values });
+    setSaving(true);
+    try {
+      if (editor?.mode === 'edit') {
+        await updateBed(editor.bed.id, values);
+      } else {
+        await createBed({ gardenId: garden.id, ...values });
+      }
+      setEditor(null);
+    } finally {
+      setSaving(false);
     }
-    setEditor(null);
   }
 
   async function remove(bed: Bed) {
@@ -104,7 +110,8 @@ export default function Beds() {
         >
           <BedForm
             initial={editor.mode === 'edit' ? editor.bed : undefined}
-            submitLabel={editor.mode === 'edit' ? 'Save changes' : 'Add bed'}
+            submitLabel={saving ? 'Saving…' : editor.mode === 'edit' ? 'Save changes' : 'Add bed'}
+            submitting={saving}
             onSubmit={(values) => void save(values)}
             onCancel={() => setEditor(null)}
           />
