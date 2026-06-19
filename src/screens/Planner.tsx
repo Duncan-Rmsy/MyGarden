@@ -1,7 +1,10 @@
 // M4: Planner — bed grid with drag-select, crop avatars, already-planted capture.
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import ScreenHeader from '../components/ScreenHeader';
+import Sheet from '../components/Sheet';
+import TwinPanel from '../components/TwinPanel';
+import ObservationSheet from '../components/ObservationSheet';
 import {
   getGarden,
   listBeds,
@@ -11,7 +14,9 @@ import {
   deletePlanting,
   cloneCrop,
   deleteCustomCrop,
+  getWeatherForGarden,
   type PlantingWithCrop,
+  type GardenWeather,
 } from '../data/repo';
 import {
   cropCellsNeeded,
@@ -22,6 +27,8 @@ import {
   computeRegion,
 } from '../domain/planner';
 import { cropConfidence } from '../domain/confidence';
+import { buildWeatherSeries, estimatePlantingState, type SeriesDay } from '../domain/twin';
+import { useForecastRefresh } from '../hooks/useForecastRefresh';
 import type { Crop, Bed, Stage, Footprint } from '../data/types';
 
 const DEFAULT_CELL_CM = 30;
@@ -172,6 +179,13 @@ function LayoutTab() {
     [garden?.id],
   );
 
+  const gardenWeather = useLiveQuery(
+    () => (garden ? getWeatherForGarden(garden.id) : Promise.resolve({ history: [], normals: [], forecast: [] })),
+    [garden?.id],
+  ) ?? { history: [], normals: [], forecast: [] };
+
+  useForecastRefresh(garden);
+
   const [selectedBedId, setSelectedBedId] = useState<string | null>(null);
   const [view, setView] = useState<LayoutView>('grid');
 
@@ -228,7 +242,7 @@ function LayoutTab() {
       </div>
 
       {bed && view === 'grid' && (
-        <BedGridView bed={bed} cellSizeCm={cellSizeCm} garden={garden ?? undefined} />
+        <BedGridView bed={bed} cellSizeCm={cellSizeCm} garden={garden ?? undefined} gardenWeather={gardenWeather} />
       )}
       {bed && view === 'calendar' && (
         <CalendarView bed={bed} garden={garden ?? undefined} />
@@ -243,12 +257,36 @@ function BedGridView({
   bed,
   cellSizeCm,
   garden,
+  gardenWeather,
 }: {
   bed: Bed;
   cellSizeCm: number;
   garden?: { lastFrostDate?: string; firstFrostDate?: string };
+  gardenWeather: GardenWeather;
 }) {
   const pairs = useLiveQuery(() => listPlantingsWithCrops(bed.id), [bed.id]);
+
+  const weatherSeries: SeriesDay[] = useMemo(() => {
+    if (!pairs || pairs.length === 0) return [];
+    const MS = 86_400_000;
+    const addDays = (iso: string, n: number) =>
+      new Date(new Date(iso + 'T00:00:00Z').getTime() + n * MS).toISOString().slice(0, 10);
+    // fromDate: earliest sownAt or transplantedAt in this bed, fallback to 1 year ago
+    const anchor = pairs
+      .flatMap((pw) => [pw.planting.sownAt, pw.planting.transplantedAt])
+      .filter(Boolean)
+      .sort()[0];
+    const fromDate = anchor ?? addDays(today, -365);
+    const toDate = addDays(today, 365);
+    return buildWeatherSeries(
+      gardenWeather.history,
+      gardenWeather.normals,
+      gardenWeather.forecast,
+      fromDate,
+      toDate,
+    );
+  }, [gardenWeather, pairs]);
+
   const [pickerRegion, setPickerRegion] = useState<Footprint | null>(null);
   const [inspecting, setInspecting] = useState<PlantingWithCrop | null>(null);
 
@@ -445,7 +483,11 @@ function BedGridView({
 
       {inspecting && (
         <Sheet title={inspecting.crop.name} onClose={() => setInspecting(null)}>
-          <PlantingDetail pw={inspecting} onRemove={() => void handleRemove(inspecting)} />
+          <PlantingDetail
+            pw={inspecting}
+            weatherSeries={weatherSeries}
+            onRemove={() => void handleRemove(inspecting)}
+          />
         </Sheet>
       )}
     </>
@@ -697,9 +739,24 @@ function CropPickerSheet({
 
 // ── Planting detail ───────────────────────────────────────────────────────────
 
-function PlantingDetail({ pw, onRemove }: { pw: PlantingWithCrop; onRemove: () => void }) {
+function PlantingDetail({
+  pw,
+  weatherSeries,
+  onRemove,
+}: {
+  pw: PlantingWithCrop;
+  weatherSeries: SeriesDay[];
+  onRemove: () => void;
+}) {
   const { planting, crop } = pw;
   const { w, h } = planting.footprint;
+  const [showObservation, setShowObservation] = useState(false);
+
+  const twinState = useMemo(
+    () => estimatePlantingState(planting, crop, weatherSeries, today),
+    [planting, crop, weatherSeries],
+  );
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
@@ -729,6 +786,19 @@ function PlantingDetail({ pw, onRemove }: { pw: PlantingWithCrop; onRemove: () =
         <dt className="text-gray-500">Start method</dt>
         <dd className="text-gray-900">{METHOD_LABEL[planting.startMethod]}</dd>
       </dl>
+
+      {twinState && (
+        <TwinPanel twinState={twinState} onObserve={() => setShowObservation(true)} />
+      )}
+
+      {showObservation && twinState && (
+        <ObservationSheet
+          planting={planting}
+          twinState={twinState}
+          onClose={() => setShowObservation(false)}
+        />
+      )}
+
       <button
         type="button"
         onClick={onRemove}
@@ -1022,26 +1092,6 @@ function CropDetailSheet({
 }
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
-
-function Sheet({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="fixed inset-0 z-20 flex items-end justify-center" role="dialog" aria-modal>
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden />
-      <div className="relative mx-auto w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl max-h-[85vh]">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">{title}</h2>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function Chip({
   children,
