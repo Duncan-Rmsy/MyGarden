@@ -214,6 +214,18 @@ describe('plantingCalendar', () => {
     expect(entries[0].status).toBe('closed');
   });
 
+  it('resolves firstFrost to next year when the current-year date has already passed', () => {
+    // today Nov 15 is past firstFrost Oct-28 → anchor rolls to 2027-10-28
+    const entries = plantingCalendar(
+      [{ anchor: 'firstFrost', startWeeks: -2, endWeeks: 0, method: 'direct' }],
+      [30, 60],
+      FROST,
+      '2026-11-15',
+    );
+    expect(entries[0].opensDate.startsWith('2027')).toBe(true);
+    expect(entries[0].closesDate).toBe('2027-10-28');
+  });
+
   it('marks a window as too-late when maturity would fall after first frost', () => {
     // lastFrost 2026-04-15, window: +2w to +6w = May 1 to Jun 12
     // daysToMaturity [180, 200] → earliest harvest = May 1 + 180 = Nov 1, after firstFrost Oct 28
