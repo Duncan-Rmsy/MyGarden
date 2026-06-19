@@ -129,9 +129,9 @@ that silently diverges from the plan fails CI. Keep this table current as module
 | §4c — frost dates      | avg last-spring / first-autumn 0 °C crossings from history; Jun/Jul boundary; single-season fallback                                       | `climate.test.ts`            |
 | §4b/§4d — planting calendar | `plantingCalendar` status: open/upcoming/closed/too-late; harvest projection; next-year firstFrost rollover; missing frost dates → empty | `planner.test.ts`            |
 | §4e — start method     | direct / indoor / buy selection by date vs frost window; indoor→transplant phase switch                                                    | _M4_                         |
-| §5.2–5.3 — twin        | accumulated GDD → stage + projections; observation re-anchors baseline; drift bias                                                         | _M4 — `twin.test.ts`_        |
+| §5.2–5.3 — twin        | accumulated GDD → stage + projections; observation re-anchors baseline; drift bias                                                         | `src/domain/twin.test.ts`     |
 | §5.5 — task engine     | idempotent generation/expiry via `generatedBy` keys                                                                                        | _M5 — `tasks.test.ts`_       |
-| §5a — weeds            | flush trigger on rain threshold; hoeable window opens then closes; reset on action                                                         | _M4_                         |
+| §5a — weeds            | flush trigger on rain threshold; hoeable window opens then closes; reset on action                                                         | _V1.5_                       |
 
 ## The coverage gate
 

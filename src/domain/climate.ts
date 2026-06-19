@@ -37,11 +37,19 @@ const MS_PER_DAY = 86_400_000;
 const CANON_YEAR = 2001;
 
 /** Day-of-year (1-based) for an ISO date, re-expressed in the canonical non-leap year. */
-function canonicalDoy(iso: string): number {
+export function canonicalDoy(iso: string): number {
   const d = new Date(iso + 'T00:00:00Z');
   const canon = Date.UTC(CANON_YEAR, d.getUTCMonth(), d.getUTCDate());
   const start = Date.UTC(CANON_YEAR, 0, 1);
   return Math.floor((canon - start) / MS_PER_DAY) + 1;
+}
+
+/**
+ * Convert a 'MM-DD' sentinel string (as stored in normals rows) to day-of-year
+ * in the canonical non-leap year.
+ */
+export function mmddToDoy(mmdd: string): number {
+  return canonicalDoy(`${CANON_YEAR}-${mmdd}`);
 }
 
 /** Convert a (possibly fractional) day-of-year to an MM-DD string in the canonical year. */
