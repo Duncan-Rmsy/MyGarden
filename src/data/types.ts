@@ -32,6 +32,7 @@ export interface Garden {
   firstFrostDate?: string;
   hardinessZone?: string;
   cellSizeCm?: number; // grid cell size for the bed layout (default 30 — §4a)
+  forecastFetchedAt?: string; // ISO datetime — forecast cache timestamp
 }
 
 export interface Bed {
@@ -139,4 +140,16 @@ export interface WeatherDay {
   rainMm: number;
   // 'normal' = day-of-year climatology for forward projection past the forecast (§4c).
   source: 'history' | 'forecast' | 'normal';
+}
+
+export interface Observation {
+  id: string;
+  plantingId: string;
+  kind: 'stage_reached' | 'note';
+  at: string;        // ISO date — field name per PLAN.md §4
+  stage?: Stage;
+  twinProjectedDate?: string;
+  deltaDays?: number;
+  note?: string;
+  createdAt: string; // ISO datetime
 }

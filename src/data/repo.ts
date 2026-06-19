@@ -3,9 +3,9 @@
 // reads/writes IndexedDB.
 
 import { db } from './db';
-import type { Bed, Crop, CultivationMethod, Footprint, Garden, Planting, PlantingStatus, StartMethod, SunExposure } from './types';
+import type { Bed, Crop, CultivationMethod, Footprint, Garden, Observation, Planting, PlantingStatus, Stage, StartMethod, SunExposure, WeatherDay } from './types';
 import type { ClimateNormalDay, DailyWeather } from '../domain/climate';
-import { doyToMMDD } from '../domain/climate';
+import { doyToMMDD, mmddToDoy } from '../domain/climate';
 
 const uid = () => crypto.randomUUID();
 
@@ -194,4 +194,94 @@ export async function createPlanting(input: NewPlanting): Promise<Planting> {
 
 export async function deletePlanting(id: string): Promise<void> {
   await db.plantings.delete(id);
+}
+
+export interface GardenWeather {
+  history: WeatherDay[];
+  normals: ClimateNormalDay[]; // converted from sentinel-date rows
+  forecast: WeatherDay[];
+}
+
+export interface NewObservation {
+  plantingId: string;
+  kind: 'stage_reached' | 'note';
+  at: string;       // ISO date
+  stage?: Stage;
+  twinProjectedDate?: string;
+  deltaDays?: number;
+  note?: string;
+}
+
+/**
+ * Load all weather rows for a garden and split them into the three logical buckets
+ * the twin needs. Normal rows are stored with sentinel year '0001'; convert them
+ * to ClimateNormalDay using mmddToDoy so buildWeatherSeries can match by DOY.
+ */
+export async function getWeatherForGarden(gardenId: string): Promise<GardenWeather> {
+  const all = await db.weatherDays.where('gardenId').equals(gardenId).toArray();
+  const history = all.filter((d) => d.source === 'history');
+  const forecast = all.filter((d) => d.source === 'forecast');
+  const normalRows = all.filter((d) => d.source === 'normal');
+  const normals: ClimateNormalDay[] = normalRows.map((d) => ({
+    doy: mmddToDoy(d.date.slice(5)), // '0001-MM-DD' → 'MM-DD'
+    tMinC: d.tMinC,
+    tMaxC: d.tMaxC,
+    rainMm: d.rainMm,
+  }));
+  return { history, normals, forecast };
+}
+
+/**
+ * Replace the stored forecast for a garden with fresh data and stamp the fetch time.
+ * Uses the [gardenId+source] compound index added in schema v3 for an atomic swap.
+ */
+export async function saveForecast(gardenId: string, days: DailyWeather[]): Promise<void> {
+  const rows = days.map((d) => ({
+    gardenId,
+    date: d.date,
+    tMinC: d.tMinC,
+    tMaxC: d.tMaxC,
+    rainMm: d.rainMm,
+    source: 'forecast' as const,
+  }));
+  await db.transaction('rw', [db.weatherDays, db.gardens], async () => {
+    await db.weatherDays.where('[gardenId+source]').equals([gardenId, 'forecast']).delete();
+    if (rows.length > 0) await db.weatherDays.bulkAdd(rows);
+    await db.gardens.update(gardenId, { forecastFetchedAt: new Date().toISOString() });
+  });
+}
+
+/** Milliseconds since the last forecast was saved, or null if never fetched. */
+export async function getForecastAge(gardenId: string): Promise<number | null> {
+  const garden = await db.gardens.get(gardenId);
+  if (!garden?.forecastFetchedAt) return null;
+  return Date.now() - new Date(garden.forecastFetchedAt).getTime();
+}
+
+export async function addObservation(input: NewObservation): Promise<Observation> {
+  const obs: Observation = {
+    id: uid(),
+    ...input,
+    createdAt: new Date().toISOString(),
+  };
+  await db.observations.add(obs);
+  return obs;
+}
+
+/** All observations for a planting, sorted chronologically by observation date. */
+export async function listObservations(plantingId: string): Promise<Observation[]> {
+  const all = await db.observations.where('plantingId').equals(plantingId).toArray();
+  return all.sort((a, b) => a.at.localeCompare(b.at));
+}
+
+export async function getLatestObservation(plantingId: string): Promise<Observation | undefined> {
+  const all = await listObservations(plantingId);
+  return all[all.length - 1];
+}
+
+export async function updatePlanting(
+  id: string,
+  changes: Partial<Omit<Planting, 'id'>>,
+): Promise<void> {
+  await db.plantings.update(id, changes);
 }
