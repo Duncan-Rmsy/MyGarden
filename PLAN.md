@@ -578,6 +578,15 @@ prompts from day one.
 **V1.5 (fast follows, §2):** full-catalog GDD upgrade · weed flush-clock twin (§5a) · season
 scrubber (§4a) · propagation-zone capacity warnings (§4e). Pest module (§5b) remains V2.
 
+**M_IMG — crop SVG icons (deferred, post-M4):** replace the colored-initial `CropAvatar`
+placeholders with proper SVG illustrations. Source artwork from OpenMoji/Twemoji for the ~20
+crops that have a matching emoji (tomato, carrot, lettuce, broccoli, courgette, aubergine, potato,
+onion, garlic, sweetcorn, pepper, pumpkin, strawberry, bean…); hand-create matching-style SVGs
+for the remaining ~20 (beetroot, spinach, basil, parsnip, turnip, radish, cauliflower, Brussels
+sprouts, celery, fennel, pea, spring onion, raspberry, chard, etc.). Store as
+`/public/crops/{cropId}.svg`; `CropAvatar` falls back to the colored initial when the file is
+absent. All SVGs must be offline-safe (bundled, not CDN).
+
 **M0.5 — scaffold reconciliation (do first, before M1):** the shipped M0 scaffold predates this
 plan revision, so align it with the updated data model (§4) and twin (§5) before building on it —
 add `maxTempC` (and apply the GDD upper cap in `src/domain/gdd.ts`), `frostKillTempC`,

@@ -1,18 +1,30 @@
-// Onboarding (PLAN.md §4c): where → how big → (crops come in M3). Establish location,
-// derive frost dates + climate normals from historical weather, then add the first bed.
-import { useState } from 'react';
+// Onboarding: location → first bed (PLAN.md §4c).
+// Frost dates are derived from historical weather in the background while the user
+// fills in bed details; if they want to adjust them they go to Settings > Frost dates.
+import { useRef, useState } from 'react';
 import { geocode, fetchHistory, type GeocodeResult } from '../api/openmeteo';
 import { deriveFrostDates, deriveNormals } from '../domain/climate';
 import type { ClimateNormalDay, DailyWeather } from '../domain/climate';
 import { createGarden, createBed, saveWeather } from '../data/repo';
 import BedForm, { type BedFormValues } from '../components/BedForm';
-import FrostDateFields from '../components/FrostDateFields';
 
 interface Location {
   name: string;
   lat: number;
   lon: number;
 }
+
+interface WeatherResult {
+  history: DailyWeather[];
+  normals: ClimateNormalDay[];
+  frost: { lastFrost: string; firstFrost: string };
+}
+
+const EMPTY_WEATHER: WeatherResult = {
+  history: [],
+  normals: [],
+  frost: { lastFrost: '', firstFrost: '' },
+};
 
 const inputClass =
   'w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600';
@@ -22,7 +34,7 @@ function placeLabel(r: GeocodeResult): string {
 }
 
 export default function Onboarding() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [location, setLocation] = useState<Location | null>(null);
 
   // Step 1 — place search
@@ -31,12 +43,9 @@ export default function Onboarding() {
   const [searching, setSearching] = useState(false);
   const [locerror, setLocError] = useState<string | null>(null);
 
-  // Step 2 — climate derivation
+  // Background climate derivation — started when location is confirmed, awaited in finish().
+  const weatherRef = useRef<Promise<WeatherResult>>(Promise.resolve(EMPTY_WEATHER));
   const [deriving, setDeriving] = useState(false);
-  const [deriveError, setDeriveError] = useState<string | null>(null);
-  const [frost, setFrost] = useState({ lastFrost: '', firstFrost: '' });
-  const [history, setHistory] = useState<DailyWeather[]>([]);
-  const [normals, setNormals] = useState<ClimateNormalDay[]>([]);
 
   const [saving, setSaving] = useState(false);
 
@@ -63,7 +72,7 @@ export default function Onboarding() {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) =>
-        selectLocation({
+        void selectLocation({
           name: 'Current location',
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
@@ -72,44 +81,43 @@ export default function Onboarding() {
     );
   }
 
-  async function selectLocation(loc: Location) {
+  function selectLocation(loc: Location) {
     setLocation(loc);
     setStep(2);
-    await runDerivation(loc);
-  }
 
-  async function runDerivation(loc: Location) {
+    // Kick off weather fetch in the background — user fills bed form while it runs.
     setDeriving(true);
-    setDeriveError(null);
-    try {
-      const days = await fetchHistory(loc.lat, loc.lon);
-      const derivedFrost = deriveFrostDates(days);
-      setHistory(days);
-      setNormals(deriveNormals(days));
-      setFrost(derivedFrost ?? { lastFrost: '', firstFrost: '' });
-    } catch {
-      setDeriveError(
-        'Could not fetch local climate data. You can enter frost dates manually below.',
-      );
-    } finally {
-      setDeriving(false);
-    }
+    weatherRef.current = fetchHistory(loc.lat, loc.lon)
+      .then((days) => {
+        const derived = deriveFrostDates(days);
+        return {
+          history: days,
+          normals: deriveNormals(days),
+          frost: derived ?? { lastFrost: '', firstFrost: '' },
+        };
+      })
+      .catch(() => EMPTY_WEATHER)
+      .finally(() => setDeriving(false));
   }
 
   async function finish(bed: BedFormValues) {
     if (!location) return;
     setSaving(true);
     try {
+      // Await the background fetch (cheap if already done; waits if still running).
+      const weather = await weatherRef.current;
       const garden = await createGarden({
         name: location.name,
         lat: location.lat,
         lon: location.lon,
-        lastFrostDate: frost.lastFrost || undefined,
-        firstFrostDate: frost.firstFrost || undefined,
+        lastFrostDate: weather.frost.lastFrost || undefined,
+        firstFrostDate: weather.frost.firstFrost || undefined,
       });
-      if (history.length > 0) await saveWeather(garden.id, history, normals);
+      if (weather.history.length > 0) {
+        await saveWeather(garden.id, weather.history, weather.normals);
+      }
       await createBed({ gardenId: garden.id, ...bed });
-      // The garden now exists; App's live query swaps to the main app automatically.
+      // Garden now exists — App's live query swaps to the main app automatically.
     } finally {
       setSaving(false);
     }
@@ -120,14 +128,12 @@ export default function Onboarding() {
       <header className="mb-6">
         <p className="text-sm font-medium text-green-700">MyGarden setup</p>
         <h1 className="mt-1 text-2xl font-bold text-gray-900">
-          {step === 1 && 'Where do you garden?'}
-          {step === 2 && 'Your local frost dates'}
-          {step === 3 && 'Add your first bed'}
+          {step === 1 ? 'Where do you garden?' : 'Add your first bed'}
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          {step === 1 && 'This sets your weather and the frost dates your calendar is built on.'}
-          {step === 2 && 'Derived from ~10 years of local weather. Tweak them to your microclimate.'}
-          {step === 3 && 'A growing space to plant into. You can add more later.'}
+          {step === 1
+            ? 'Sets your local weather and frost dates for the planting calendar.'
+            : 'A growing space to plant into. You can add more later.'}
         </p>
         <StepDots step={step} />
       </header>
@@ -180,7 +186,7 @@ export default function Onboarding() {
                   <button
                     type="button"
                     onClick={() =>
-                      void selectLocation({ name: placeLabel(r), lat: r.lat, lon: r.lon })
+                      selectLocation({ name: placeLabel(r), lat: r.lat, lon: r.lon })
                     }
                     className="w-full px-3 py-2.5 text-left text-sm text-gray-800 hover:bg-gray-50"
                   >
@@ -195,55 +201,19 @@ export default function Onboarding() {
 
       {step === 2 && (
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            📍 {location?.name}
+          <p className="flex items-center gap-2 text-sm text-gray-500">
+            <span>📍 {location?.name}</span>
+            {deriving && (
+              <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-600">
+                reading climate data…
+              </span>
+            )}
           </p>
-
-          {deriving && (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
-              Reading ~10 years of local weather…
-            </div>
-          )}
-
-          {!deriving && (
-            <>
-              {deriveError && <p className="text-sm text-amber-600">{deriveError}</p>}
-              <FrostDateFields
-                lastFrost={frost.lastFrost}
-                firstFrost={frost.firstFrost}
-                onChange={setFrost}
-              />
-              <p className="text-xs text-gray-400">
-                These anchor every sow and transplant date. A frost pocket or warm wall can shift
-                them by weeks.
-              </p>
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-600"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white"
-                >
-                  Continue
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="space-y-4">
           <BedForm
-            submitLabel={saving ? 'Saving…' : 'Finish setup'}
+            submitLabel={saving ? 'Setting up your garden…' : 'Finish setup'}
+            submitting={saving}
             onSubmit={(bed) => void finish(bed)}
-            onCancel={() => setStep(2)}
+            onCancel={() => setStep(1)}
           />
         </div>
       )}
@@ -254,7 +224,7 @@ export default function Onboarding() {
 function StepDots({ step }: { step: number }) {
   return (
     <div className="mt-4 flex gap-1.5">
-      {[1, 2, 3].map((n) => (
+      {[1, 2].map((n) => (
         <span
           key={n}
           className={[

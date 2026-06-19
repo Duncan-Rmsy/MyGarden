@@ -62,6 +62,23 @@ export function footprintsOverlap(
 }
 
 /**
+ * Normalised footprint covering the two corner cells of a drag selection (§4a). Order-
+ * independent: the result spans from the min corner and always has w,h ≥ 1, so a tap on
+ * a single cell yields a 1×1 region.
+ */
+export function computeRegion(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): { x: number; y: number; w: number; h: number } {
+  return {
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y, b.y),
+    w: Math.abs(b.x - a.x) + 1,
+    h: Math.abs(b.y - a.y) + 1,
+  };
+}
+
+/**
  * True if the proposed footprint overlaps any existing planting footprint.
  * Used to prevent double-placing a crop on an occupied cell block.
  */

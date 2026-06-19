@@ -47,6 +47,22 @@ describe('BedForm', () => {
     );
   });
 
+  it('disables submit while the parent is saving (guards double-submit)', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <BedForm
+        submitLabel="Setting up…"
+        submitting
+        initial={{ name: 'Back bed', widthCm: 120, lengthCm: 240, sunExposure: 'full' }}
+        onSubmit={onSubmit}
+      />,
+    );
+    const submit = screen.getByRole('button', { name: 'Setting up…' });
+    expect(submit).toBeDisabled();
+    await userEvent.click(submit);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('prefills from initial values for editing', () => {
     render(
       <BedForm

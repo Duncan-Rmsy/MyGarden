@@ -14,6 +14,8 @@ interface BedFormProps {
   submitLabel: string;
   onSubmit: (values: BedFormValues) => void;
   onCancel?: () => void;
+  /** Disables submit/cancel while the parent persists — guards against double-submit. */
+  submitting?: boolean;
 }
 
 const SUN_OPTIONS: { value: SunExposure; label: string }[] = [
@@ -33,7 +35,13 @@ const inputClass =
   'w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600';
 
 /** Shared bed editor used by onboarding's first bed and the Beds screen CRUD. */
-export default function BedForm({ initial, submitLabel, onSubmit, onCancel }: BedFormProps) {
+export default function BedForm({
+  initial,
+  submitLabel,
+  onSubmit,
+  onCancel,
+  submitting = false,
+}: BedFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [widthCm, setWidthCm] = useState(initial?.widthCm?.toString() ?? '');
   const [lengthCm, setLengthCm] = useState(initial?.lengthCm?.toString() ?? '');
@@ -51,7 +59,7 @@ export default function BedForm({ initial, submitLabel, onSubmit, onCancel }: Be
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!valid) return;
+        if (!valid || submitting) return;
         onSubmit({ name: name.trim(), widthCm: width, lengthCm: length, sunExposure, cultivationMethod });
       }}
     >
@@ -149,14 +157,15 @@ export default function BedForm({ initial, submitLabel, onSubmit, onCancel }: Be
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-600"
+            disabled={submitting}
+            className="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-600 disabled:opacity-40"
           >
             Cancel
           </button>
         )}
         <button
           type="submit"
-          disabled={!valid}
+          disabled={!valid || submitting}
           className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
         >
           {submitLabel}
