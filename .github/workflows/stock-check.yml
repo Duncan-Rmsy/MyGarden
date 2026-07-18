@@ -1,0 +1,64 @@
+name: Stock check — Debenhams Royce Cantilever
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub Actions cron can lag a few minutes under load.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+# Needed so the "Persist state" step can commit state.json back to the branch.
+permissions:
+  contents: write
+
+# Never let two runs overlap and race on the state commit.
+concurrency:
+  group: stock-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check stock
+        id: check
+        run: python stock-monitor/check_stock.py
+
+      - name: Send email if in stock
+        if: steps.check.outputs.should_email == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          from: MyGarden Stock Bot <${{ secrets.SMTP_USERNAME }}>
+          to: duncan.ramsay@gmail.com
+          subject: 'IN STOCK: Royce Executive 3m Cantilever (£539) — Debenhams'
+          body: |
+            Good news — the Norfolk Leisure Royce Executive 3m Cantilever
+            (Taupe Canopy, Cover & Base) is back in stock at Debenhams.
+
+            Current price: ${{ steps.check.outputs.price }}
+
+            Buy it here:
+            ${{ steps.check.outputs.url }}
+
+            (Automated alert from the MyGarden stock-check workflow.)
+
+      - name: Persist state
+        if: steps.check.outputs.state_changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stock-monitor/state.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(stock): status is now ${{ steps.check.outputs.status }}"
+            git push
+          fi

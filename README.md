@@ -42,6 +42,13 @@ src/
   screens/     Today, Planner, Beds, Settings
 ```
 
+## Stock monitor (unrelated cron job)
+
+`stock-monitor/` holds a standalone GitHub Actions cron that emails when a
+specific Debenhams product comes back in stock. It's independent of the app —
+see [`stock-monitor/README.md`](./stock-monitor/README.md) for the required SMTP
+secrets and how to run it.
+
 ## Status
 
 Milestone 0 (scaffold) — running PWA shell, local DB schema, tested domain core, and CI.
